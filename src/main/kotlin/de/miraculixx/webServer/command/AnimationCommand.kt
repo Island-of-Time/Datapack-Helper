@@ -109,8 +109,7 @@ class AnimationCommand {
                         file.writeText(content)
 
                         player.sendMessage(prefix + cmp("New animation created! Click here to play it").addCommand("/function animation:$name"))
-                        Bukkit.getConsoleSender().dispatchCommand("datapack disable \"file/iot-general\"")
-                        Bukkit.getConsoleSender().dispatchCommand("datapack enable \"file/iot-general\"")
+                        Bukkit.reloadData()
                     }
                 }
             }

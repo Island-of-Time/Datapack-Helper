@@ -2,6 +2,7 @@ package de.miraculixx.webServer.events
 
 import de.miraculixx.kpaper.event.listen
 import de.miraculixx.kpaper.extensions.broadcast
+import de.miraculixx.kpaper.extensions.geometry.add
 import de.miraculixx.kpaper.extensions.onlinePlayers
 import de.miraculixx.kpaper.items.customModel
 import de.miraculixx.kpaper.runnables.task
@@ -127,14 +128,34 @@ class ConvertorEvent {
     private val task = task(true, 0, 10) {
         onlinePlayers.forEach { p ->
             val item = p.inventory.itemInMainHand
-            if (item.itemMeta?.customModel != 100) return@forEach
-            if (item.type != Material.RECOVERY_COMPASS) return@forEach
-            val radius = item.itemMeta?.persistentDataContainer?.get(key, PersistentDataType.INTEGER)
-            val nearbyFull = p.location.getNearbyEntitiesByType(Marker::class.java, radius?.toDouble() ?: 3.0).toMutableSet()
-            val nearbyHalf = p.location.getNearbyEntitiesByType(Marker::class.java, radius?.toDouble()?.div(2) ?: 1.5).toSet()
-            nearbyFull.removeAll(nearbyHalf)
-            nearbyFull.forEach { e -> p.spawnParticle(Particle.VILLAGER_HAPPY, e.location, 2, 0.4, 0.4, 0.4, 0.1) }
-            nearbyHalf.forEach { e -> p.spawnParticle(Particle.VILLAGER_HAPPY, e.location, 2, 0.2, 0.2, 0.2, 0.1) }
+
+            when (item.type) {
+                Material.RECOVERY_COMPASS -> {
+                    if (item.itemMeta?.customModel != 100) return@forEach
+                    val radius = item.itemMeta?.persistentDataContainer?.get(key, PersistentDataType.INTEGER)
+                    val nearbyFull = p.location.getNearbyEntitiesByType(Marker::class.java, radius?.toDouble() ?: 3.0).toMutableSet()
+                    val nearbyHalf = p.location.getNearbyEntitiesByType(Marker::class.java, radius?.toDouble()?.div(2) ?: 1.5).toSet()
+                    nearbyFull.removeAll(nearbyHalf)
+                    nearbyFull.forEach { e -> p.spawnParticle(Particle.VILLAGER_HAPPY, e.location, 2, 0.4, 0.4, 0.4, 0.1) }
+                    nearbyHalf.forEach { e -> p.spawnParticle(Particle.VILLAGER_HAPPY, e.location, 2, 0.2, 0.2, 0.2, 0.1) }
+                }
+
+                Material.PINK_STAINED_GLASS_PANE -> {
+                    val source = p.location
+                    val display = Bukkit.createBlockData(Material.GLASS_PANE)
+                    (-5..5).forEach { x ->
+                        (-5..5).forEach { y ->
+                            (-5..5).forEach { z ->
+                                val b = source.world.getBlockAt(source.clone().add(x, y, z))
+                                if (b.type == Material.PINK_STAINED_GLASS_PANE)
+                                    p.spawnParticle(Particle.BLOCK_MARKER, b.location.add(.5,.5,.5), 1, display)
+                            }
+                        }
+                    }
+                }
+
+                else -> Unit
+            }
         }
     }
 

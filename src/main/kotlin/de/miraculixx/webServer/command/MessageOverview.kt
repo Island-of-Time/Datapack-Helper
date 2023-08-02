@@ -28,7 +28,6 @@ class MessageOverview {
     data class FunctionInfo(
         val text: String,
         val prefix: String,
-        val speed: Int,
         val target: String
     )
 }

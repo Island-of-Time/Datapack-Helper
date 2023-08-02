@@ -40,7 +40,7 @@ class LanguageOverview : ItemProvider {
                     Json.decodeFromString<MessageOverview.FunctionInfo>(line)
                 } catch (e: Exception) {
                     println(e.message)
-                    MessageOverview.FunctionInfo("Error", "", 0, "")
+                    MessageOverview.FunctionInfo("Error", "", "")
                 }
 
                 add(itemStack(Material.PAPER) {
@@ -49,7 +49,6 @@ class LanguageOverview : ItemProvider {
                         name = cmp(file.nameWithoutExtension, cHighlight)
                         lore(buildList {
                             add(Component.empty())
-                            add(cmp("Speed: ", cHighlight) + cmp(functionData.speed.toString()))
                             add(cmp("Selector: ", cHighlight) + cmp(functionData.target))
                             add(cmp("Prefix: ", cHighlight) + cmp(gson.deserialize(functionData.prefix.ifBlank { "{\"text\":\"\"}" }).plainText()))
                             val component = mm.stripTags(functionData.text)

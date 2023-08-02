@@ -1,4 +1,4 @@
-@file:Suppress("UNCHECKED_CAST")
+@file:Suppress("UNCHECKED_CAST", "UNCHECKED_CAST")
 
 package de.miraculixx.webServer.command
 
@@ -9,14 +9,14 @@ import de.miraculixx.kpaper.extensions.worlds
 import de.miraculixx.kpaper.runnables.sync
 import de.miraculixx.kpaper.runnables.task
 import de.miraculixx.kpaper.runnables.taskRunLater
-import de.miraculixx.webServer.utils.cMark
-import de.miraculixx.webServer.utils.cmp
-import de.miraculixx.webServer.utils.plus
-import de.miraculixx.webServer.utils.prefix
+import de.miraculixx.webServer.utils.*
 import dev.jorel.commandapi.kotlindsl.*
 import dev.jorel.commandapi.wrappers.CommandResult
 import dev.jorel.commandapi.wrappers.Rotation
 import kotlinx.coroutines.*
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
+import kotlinx.serialization.encodeToString
 import net.kyori.adventure.audience.Audience
 import org.bukkit.Bukkit
 import org.bukkit.Location
@@ -27,26 +27,19 @@ import java.util.*
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
+import kotlin.math.nextDown
 import kotlin.time.Duration.Companion.milliseconds
 
 class PathingCommand {
     private val creators: MutableMap<UUID, PathingData> = mutableMapOf()
     private val dataPackFolder = File("world/datapacks/iot-general/data/animation/functions")
 
-    /**
-     * - Control Points
-     *    >  Speed
-     * - Pause (ticks)
-     * - Execute
-     * - Remove last
-     */
-
     val command = commandTree("pathing") {
         literalArgument("new") {
             entitySelectorArgumentManyEntities("target") {
                 playerExecutor { player, args ->
                     val target = args[0] as List<Entity>
-                    creators[player.uniqueId] = PathingData(target, mutableListOf())
+                    creators[player.uniqueId] = PathingData(target, args.getRaw(0)!!, mutableListOf())
                     player.sendMessage(prefix + cmp("New Pathing script started!"))
                     target.forEach { e -> e.isGlowing = true }
                     taskRunLater(10) { target.forEach { e -> e.isGlowing = false } }
@@ -115,104 +108,147 @@ class PathingCommand {
             }
         }
 
-        literalArgument("finish") {
-            textArgument("target") {
-                playerExecutor { player, args ->
-                    val data = creators[player.uniqueId] ?: return@playerExecutor
-                    val target = args[0] as String
-                    CoroutineScope(Dispatchers.Default).launch {
-                        var lastPoint: Location? = null
-                        data.actions.forEach { action ->
-                            val delay = when (action.type) {
-                                PathingType.CONTROL_POINT -> {
-                                    val animationData = animateFromTo(lastPoint ?: action.location!!, action.location!!, action.time!!)
-                                    Audience.empty().animateDirectly(animationData, data.target)
-                                    lastPoint = action.location
-                                    animationData.first.size + 1
-                                }
-
-                                PathingType.DELAY -> action.time!!.toInt()
-                                PathingType.RUN_SCRIPT -> {
-                                    sync { Bukkit.dispatchCommand(console, "execute as $target at @s run ${action.script}") }
-                                    1
-                                }
+        literalArgument("play") {
+            playerExecutor { player, _ ->
+                val data = creators[player.uniqueId] ?: return@playerExecutor
+                CoroutineScope(Dispatchers.Default).launch {
+                    var lastPoint: Location? = null
+                    val first = data.actions.first { it.type == PathingType.CONTROL_POINT }
+                    sync { data.target.forEach { e -> e.teleport(first.location!!) } }
+                    data.actions.forEach { action ->
+                        val delay = when (action.type) {
+                            PathingType.CONTROL_POINT -> {
+                                val animationData = animateFromTo(lastPoint ?: action.location!!, action.location!!, action.time!!)
+                                Audience.empty().animateDirectly(animationData, data.target)
+                                lastPoint = action.location
+                                animationData.first.size + 1
                             }
 
-                            delay((50L * delay).milliseconds)
+                            PathingType.DELAY -> action.time!!.toInt()
+                            PathingType.RUN_SCRIPT -> {
+                                sync { Bukkit.dispatchCommand(console, "execute as ${data.rawTarget} at @s run ${action.script}") }
+                                1
+                            }
                         }
+
+                        delay((50L * delay).milliseconds)
                     }
+                    player.sendMessage(prefix + cmp("Animation finished"))
                 }
             }
         }
 
         literalArgument("print") {
-            textArgument("target") {
-                textArgument("name") {
-                    playerExecutor { player, args ->
-                        val name = args[1] as String
-                        val file = File(dataPackFolder, "$name.mcfunction")
-                        if (!file.parentFile.exists()) file.parentFile.mkdirs()
-                        val target = args[0] as String
-                        val data = creators[player.uniqueId]?.actions ?: return@playerExecutor
+            textArgument("name") {
+                playerExecutor { player, args ->
+                    val name = args[0] as String
+                    val file = File(dataPackFolder, "$name.mcfunction")
+                    if (!file.parentFile.exists()) file.parentFile.mkdirs()
+                    val data = creators[player.uniqueId] ?: return@playerExecutor
+                    File(dataPackFolder, "$name.json").writeText(json.encodeToString(PathingJsonData(data.rawTarget, data.actions)))
 
-                        val uuid = UUID.randomUUID()
-                        val content = buildString {
-                            append(
-                                "# Animation Generator (by Miraculixx & To_Binio)\n" +
-                                        "#\n" +
-                                        "# Settings Input\n" +
-                                        "# - Control Points: ${data.filter { it.type == PathingType.CONTROL_POINT }.size}\n" +
-                                        "# - Scripts: ${data.filter { it.type == PathingType.RUN_SCRIPT }.size}\n" +
-                                        "# - Target: $target\n"
-                            )
+                    printToFunction(data.actions, data.rawTarget, file, name)
+                    Bukkit.reloadData()
+                    player.sendMessage(prefix + cmp("$name was printed to function"))
+                }
+            }
+        }
 
-                            var counter = 1
-                            var lastPoint: Location? = null
-                            data.forEach { action ->
-                                when (action.type) {
-                                    PathingType.CONTROL_POINT -> {
-                                        val current = action.location ?: return@forEach
-                                        val lastCurrent = lastPoint ?: current
-                                        val animationData = animateFromTo(lastCurrent, current, action.time!!)
-                                        append("\nexecute if score $uuid text-ticker matches $counter as $target at @s run tp @s ${lastCurrent.x} ${lastCurrent.y} ${lastCurrent.z} ${lastCurrent.yaw.round(3)} ${lastCurrent.pitch.round(3)}")
-                                        val relativeMovement = animationData.first.firstOrNull()
-                                        val counterTo = counter + animationData.first.size
-                                        if (relativeMovement != null)
-                                            append("\nexecute if score $uuid text-ticker matches $counter..$counterTo as $target at @s run tp @s ~${relativeMovement.x} ~${relativeMovement.y} ~${relativeMovement.z} ${relativeMovement.yaw} ~")
-                                        counter = counterTo
-                                        val finalLoc = animationData.second
-                                        append("\nexecute if score $uuid text-ticker matches $counter as $target at @s run tp @s ${finalLoc.x} ${finalLoc.y} ${finalLoc.z} ${finalLoc.yaw} ${finalLoc.pitch}")
-                                        lastPoint = current
-                                        counter++
-                                    }
-
-                                    PathingType.DELAY -> counter += action.time?.toInt() ?: 0
-
-                                    PathingType.RUN_SCRIPT -> {
-                                        append("\nexecute if score $uuid text-ticker matches $counter as $target at @s run ${action.script}")
-                                        counter++
-                                    }
-                                }
-                            }
-
-                            append(
-                                "\n\n# Looping & Reset\n" +
-                                        "scoreboard players add $uuid text-ticker 1\n" +
-                                        "execute if score $uuid text-ticker matches ..$counter run schedule function animation:$name 1t replace\n" +
-                                        "execute if score $uuid text-ticker matches ${counter + 1}.. run scoreboard players set $uuid text-ticker 0"
-                            )
-                        }
-
-                        file.writeText(content)
+        literalArgument("reprint") {
+            textArgument("name") {
+                anyExecutor { sender, args ->
+                    val name = args[0] as String
+                    val file = File(dataPackFolder, "$name.json")
+                    if (!file.exists()) {
+                        sender.sendMessage(prefix + cmp("The file $name.json does not exist!", cError))
+                        return@anyExecutor
                     }
+                    val data = json.decodeFromString<PathingJsonData>(file.readText())
+
+                    printToFunction(data.actions, data.target, File(dataPackFolder, "$name.mcfunction"), name)
+                    Bukkit.reloadData()
+                    sender.sendMessage(prefix + cmp("$name was reprinted to function"))
+                }
+            }
+        }
+
+        literalArgument("load") {
+            textArgument("name") {
+                playerExecutor { sender, args ->
+                    val name = args[0] as String
+                    val file = File(dataPackFolder, "$name.json")
+                    if (!file.exists()) {
+                        sender.sendMessage(prefix + cmp("The file $name.json does not exist!", cError))
+                        return@playerExecutor
+                    }
+                    val data = json.decodeFromString<PathingJsonData>(file.readText())
+                    val entities = Bukkit.selectEntities(sender, data.target)
+
+                    creators[sender.uniqueId] = PathingData(entities, data.target, data.actions)
+                    sender.sendMessage(prefix + cmp("Pathing $name loaded!"))
                 }
             }
         }
     }
 
-    /**
-     * @param onTeleport Location Vector - Relative (yes or no)
-     */
+    private fun printToFunction(data: List<PathingAction>, target: String, file: File, name: String) {
+        val uuid = UUID.randomUUID()
+        val content = buildString {
+            append(
+                "# Animation Generator (by Miraculixx & To_Binio)\n" +
+                        "#\n" +
+                        "# Settings Input\n" +
+                        "# - Control Points: ${data.filter { it.type == PathingType.CONTROL_POINT }.size}\n" +
+                        "# - Scripts: ${data.filter { it.type == PathingType.RUN_SCRIPT }.size}\n" +
+                        "# - Target: $target\n"
+            )
+
+            var counter = 1
+            var lastPoint: Location? = null
+            data.forEach { action ->
+                when (action.type) {
+                    PathingType.CONTROL_POINT -> {
+                        val current = action.location ?: return@forEach
+                        val lastCurrent = lastPoint ?: current
+                        val animationData = animateFromTo(lastCurrent, current, action.time!!)
+                        append(
+                            "\nexecute if score $uuid text-ticker matches $counter as $target at @s run tp @s ${lastCurrent.x} ${lastCurrent.y} ${lastCurrent.z} ${
+                                lastCurrent.yaw.round(
+                                    3
+                                )
+                            } ${lastCurrent.pitch.round(3)}"
+                        )
+                        val relativeMovement = animationData.first.firstOrNull()
+                        val counterTo = counter + animationData.first.size
+                        if (relativeMovement != null)
+                            append("\nexecute if score $uuid text-ticker matches $counter..$counterTo as $target at @s run tp @s ~${relativeMovement.x} ~${relativeMovement.y} ~${relativeMovement.z} ${relativeMovement.yaw} ~")
+                        counter = counterTo
+                        val finalLoc = animationData.second
+                        append("\nexecute if score $uuid text-ticker matches $counter as $target at @s run tp @s ${finalLoc.x} ${finalLoc.y} ${finalLoc.z} ${finalLoc.yaw} ${finalLoc.pitch}")
+                        lastPoint = current
+                        counter++
+                    }
+
+                    PathingType.DELAY -> counter += action.time?.toInt() ?: 0
+
+                    PathingType.RUN_SCRIPT -> {
+                        append("\nexecute if score $uuid text-ticker matches $counter as $target at @s run ${action.script}")
+                        counter++
+                    }
+                }
+            }
+
+            append(
+                "\n\n# Looping & Reset\n" +
+                        "scoreboard players add $uuid text-ticker 1\n" +
+                        "execute if score $uuid text-ticker matches ..$counter run schedule function animation:$name 1t replace\n" +
+                        "execute if score $uuid text-ticker matches ${counter + 1}.. run scoreboard players set $uuid text-ticker 0"
+            )
+        }
+
+        file.writeText(content)
+    }
+
     private fun animateFromTo(from: Location, to: Location, speed: Double): Pair<List<Location>, Location> {
         val distanceLocation = Vector3d(to.x - from.x, to.y - from.y, to.z - from.z)
         val absoluteDistance = Vector3d(abs(distanceLocation.x), abs(distanceLocation.y), abs(distanceLocation.z))
@@ -246,23 +282,14 @@ class PathingCommand {
 
                 val relativeLoc = Location(
                     worlds[0],
-                    if (xPositive || primary != CoordinateAxis.X) moveX else -moveX,
-                    if (yPositive || primary != CoordinateAxis.Y) moveY else -moveY,
-                    if (zPositive || primary != CoordinateAxis.Z) moveZ else -moveZ,
-                    yaw.toFloat(), 0f
+                    (if (xPositive || primary != CoordinateAxis.X) moveX else -moveX).round(5),
+                    (if (yPositive || primary != CoordinateAxis.Y) moveY else -moveY).round(5),
+                    (if (zPositive || primary != CoordinateAxis.Z) moveZ else -moveZ).round(5),
+                    yaw.toFloat().round(3), 0f
                 )
                 add(relativeLoc)
             }
         } to to
-
-//        task(period = 1, howOften = maxTime.toLong(), endCallback = {
-//            onTeleport.invoke(to, false)
-//            sendMessage(prefix + cmp("Animation finished!"))
-//        }) {
-//
-//            onTeleport.invoke(relativeLoc, true)
-//        }
-//        return maxTime.toInt() + 1
     }
 
     private fun Audience.animateDirectly(pair: Pair<List<Location>, Location>, target: List<Entity>) {
@@ -282,10 +309,15 @@ class PathingCommand {
         ).apply { yaw = vec.yaw })
     }
 
-    private data class PathingData(val target: List<Entity>, val actions: MutableList<PathingAction>)
+    @Serializable
+    private data class PathingJsonData(val target: String, val actions: MutableList<PathingAction>)
+
+    private data class PathingData(val target: List<Entity>, val rawTarget: String, val actions: MutableList<PathingAction>)
+
+    @Serializable
     private data class PathingAction(
         val type: PathingType,
-        val location: Location? = null,
+        val location: @Serializable(with = LocationSerializer::class) Location? = null,
         val time: Double? = null,
         val script: String? = null
     )
