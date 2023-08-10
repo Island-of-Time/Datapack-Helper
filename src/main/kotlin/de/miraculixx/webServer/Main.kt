@@ -2,10 +2,7 @@ package de.miraculixx.webServer
 
 import de.miraculixx.kpaper.main.KPaper
 import de.miraculixx.webServer.command.*
-import de.miraculixx.webServer.events.ConvertorEvent
-import de.miraculixx.webServer.events.LeashEvent
-import de.miraculixx.webServer.events.NameTagEvent
-import de.miraculixx.webServer.events.TexturePackEvent
+import de.miraculixx.webServer.events.*
 import de.miraculixx.webServer.utils.consoleSender
 import dev.jorel.commandapi.CommandAPI
 import dev.jorel.commandapi.CommandAPIBukkitConfig
@@ -32,6 +29,7 @@ class Main : KPaper() {
         PathingCommand()
         ReloadDataPackCommand()
         MarkerCommand()
+        MultiToolCommand()
     }
 
     override fun startup() {
@@ -40,6 +38,7 @@ class Main : KPaper() {
         LeashEvent()
         ConvertorEvent()
         NameTagEvent()
+        CommandPreprocess()
         TexturePackEvent
     }
 
