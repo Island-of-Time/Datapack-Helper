@@ -1,7 +1,6 @@
 package de.miraculixx.webServer.events
 
 import de.miraculixx.kpaper.event.listen
-import de.miraculixx.kpaper.extensions.bukkit.plainText
 import de.miraculixx.kpaper.items.name
 import de.miraculixx.webServer.Main
 import de.miraculixx.webServer.utils.gui.logic.InventoryUtils.get
@@ -15,7 +14,6 @@ import org.bukkit.block.Sign
 import org.bukkit.event.block.Action
 import org.bukkit.event.inventory.InventoryClickEvent
 import org.bukkit.event.inventory.InventoryType
-import org.bukkit.event.inventory.PrepareAnvilEvent
 import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerSwapHandItemsEvent
 import org.bukkit.persistence.PersistentDataType

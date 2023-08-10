@@ -1,6 +1,5 @@
 package de.miraculixx.webServer.events
 
-import de.miraculixx.webServer.utils.cmp
 import de.miraculixx.kpaper.event.listen
 import de.miraculixx.kpaper.runnables.taskRunLater
 import org.bukkit.Material
@@ -21,10 +20,10 @@ class LeashEvent {
 
         val loc = block.location
         taskRunLater(1) {
-            val nearby = loc.getNearbyEntities(1.0,1.0,1.0).map { e -> e.type }
+            val nearby = loc.getNearbyEntities(1.0, 1.0, 1.0).map { e -> e.type }
             if (nearby.contains(EntityType.LEASH_HITCH)) {
                 if (nearby.contains(EntityType.INTERACTION)) return@taskRunLater
-                val interaction = loc.world.spawnEntity(loc.add(0.5,0.3,0.5), EntityType.INTERACTION) as Interaction
+                val interaction = loc.world.spawnEntity(loc.add(0.5, 0.3, 0.5), EntityType.INTERACTION) as Interaction
                 interaction.interactionHeight = 0.6f
                 interaction.interactionWidth = 0.45f
             }
