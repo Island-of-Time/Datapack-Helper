@@ -18,7 +18,6 @@ import org.bukkit.persistence.PersistentDataType
 import org.bukkit.util.Transformation
 import org.joml.Quaternionf
 import org.joml.Vector3f
-import kotlin.jvm.optionals.getOrElse
 
 class ConvertBlockCommand {
     val convertCommand = commandTree("convertblock") {
@@ -59,23 +58,6 @@ class ConvertBlockCommand {
                     }
                     player.inventory.addItem(item)
                 }
-            }
-        }
-    }
-
-    val convertDelete = commandTree("convertremover") {
-        integerArgument("distance", optional = true) {
-            playerExecutor { player, args ->
-                val radius = args[0] as Int
-                val distance = args.getOptional(1).getOrElse { 4 } as Int
-                val item = itemStack(Material.SLIME_BALL) {
-                    meta {
-                        name = cmp("Block Display Sniper", cError)
-                        persistentDataContainer.set(key2, PersistentDataType.INTEGER, distance)
-                        customModel = 100
-                    }
-                }
-                player.inventory.addItem(item)
             }
         }
     }

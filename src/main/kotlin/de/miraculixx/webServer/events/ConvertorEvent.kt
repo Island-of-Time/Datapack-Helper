@@ -1,34 +1,39 @@
+@file:Suppress("unused")
+
 package de.miraculixx.webServer.events
 
 import de.miraculixx.kpaper.event.listen
-import de.miraculixx.kpaper.extensions.broadcast
 import de.miraculixx.kpaper.extensions.geometry.add
+import de.miraculixx.kpaper.extensions.kotlin.enumOf
 import de.miraculixx.kpaper.extensions.onlinePlayers
 import de.miraculixx.kpaper.items.customModel
 import de.miraculixx.kpaper.runnables.task
 import de.miraculixx.kpaper.runnables.taskRunLater
 import de.miraculixx.webServer.Main
+import de.miraculixx.webServer.command.multiToolSelection
+import de.miraculixx.webServer.command.MultiToolCommand
+import de.miraculixx.webServer.command.multiToolData
+import de.miraculixx.webServer.command.multiToolSelection
 import de.miraculixx.webServer.utils.cmp
 import de.miraculixx.webServer.utils.gui.logic.InventoryUtils.get
 import de.miraculixx.webServer.utils.plus
 import de.miraculixx.webServer.utils.prefix
 import de.miraculixx.webServer.utils.soundEnable
-import io.papermc.paper.event.player.PlayerInventorySlotChangeEvent
 import org.bukkit.*
+import org.bukkit.block.BlockFace
 import org.bukkit.block.data.BlockData
-import org.bukkit.entity.BlockDisplay
-import org.bukkit.entity.Marker
-import org.bukkit.entity.Player
+import org.bukkit.block.data.type.Fence
+import org.bukkit.block.data.type.Stairs
+import org.bukkit.block.data.type.Wall
+import org.bukkit.entity.*
 import org.bukkit.event.block.Action
-import org.bukkit.event.player.PlayerChangedMainHandEvent
 import org.bukkit.event.player.PlayerInteractEvent
-import org.bukkit.event.player.PlayerItemHeldEvent
+import org.bukkit.event.player.PlayerSwapHandItemsEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.util.BoundingBox
 import org.bukkit.util.Vector
 import org.joml.Vector3d
-import java.util.*
 import kotlin.collections.set
 import kotlin.math.cos
 import kotlin.math.sin
@@ -36,7 +41,7 @@ import kotlin.math.sin
 class ConvertorEvent {
     private val key = NamespacedKey(Main.INSTANCE, "webserver.command-item")
     private val key2 = NamespacedKey(Main.INSTANCE, "webserver.command-item-tag")
-    private val deletors: MutableMap<UUID, MutableMap<BlockDisplay, BlockData>> = mutableMapOf()
+    private val key3 = NamespacedKey(Main.INSTANCE, "webserver.command-item-tag3")
 
     private val cooldown: MutableSet<Player> = mutableSetOf()
     private val onClick = listen<PlayerInteractEvent> {
@@ -59,47 +64,6 @@ class ConvertorEvent {
 
             }
 
-            Material.SLIME_BALL -> {
-                it.isCancelled = true
-                if (cooldown.contains(player)) return@listen
-                val deletor = deletors.getOrPut(player.uniqueId) { mutableMapOf() }
-                if (player.isSneaking) {
-                    deletor.forEach { bd -> bd.key.block = bd.value }
-                    deletor.clear()
-                    return@listen
-                }
-
-                if (it.action.isLeftClick) { //Delete
-                    deletor.forEach { bd -> bd.key.remove() }
-                    player.sendMessage(prefix + cmp("Killed ${deletor.size} Blocks"))
-                    deletor.clear()
-                } else if (it.action.isRightClick) {
-                    broadcast(cmp("Start Ray"))
-                    val start = player.location.add(0.0, 1.5, 0.0)
-                    val distance = item.itemMeta?.persistentDataContainer?.get(key2, PersistentDataType.INTEGER) ?: return@listen
-                    raycast(start, start.yaw - 90, start.pitch, distance) { loc ->
-                        loc.world.spawnParticle(Particle.COMPOSTER, loc, 1, .0, .0, .0, 0.1)
-                        val vec = Vector(loc.x, loc.y, loc.z)
-                        loc.getNearbyEntitiesByType(BlockDisplay::class.java, 3.0).forEach { bd ->
-                            if (deletor.contains(bd)) return@forEach
-                            val bdLoc = bd.location
-                            val transformation = bd.transformation
-                            val translation = transformation.translation
-                            val scale = transformation.scale
-                            val sourceVec = Vector(bdLoc.x + translation.x, bdLoc.y + translation.y, bdLoc.z + translation.z)
-                            val boundingBox = BoundingBox.of(
-                                sourceVec,
-                                sourceVec.clone().add(Vector(scale.x, scale.y, scale.z))
-                            )
-                            if (!boundingBox.contains(vec)) return@forEach
-                            deletor[bd] = bd.block.clone()
-                            bd.block = Bukkit.createBlockData(Material.YELLOW_CONCRETE)
-                        }
-                    }
-                    player.sendMessage(prefix + cmp("Stop Ray"))
-                }
-            }
-
             Material.SPECTRAL_ARROW -> {
                 val block = it.clickedBlock ?: return@listen
                 val tag = meta.persistentDataContainer.get(key, PersistentDataType.STRING)
@@ -118,11 +82,150 @@ class ConvertorEvent {
                 }
             }
 
+            Material.FEATHER -> {
+                it.isCancelled = true
+                val multiData = multiToolSelection.getOrPut(player.uniqueId) { mutableMapOf() }
+                val multiSettings = multiToolData.getOrPut(player.uniqueId) { MultiToolCommand.MultiToolData() }
+                if (it.action.isRightClick) {
+
+                    when (multiSettings.mode) {
+                        MultiToolCommand.MultiToolMode.MOVE -> {
+                            val loc = player.location
+                            val pitch = loc.pitch
+                            val yaw = ((loc.yaw + 180) % 360) - 180
+                            val facing = when {
+                                pitch <= -65 -> BlockFace.UP
+                                pitch >= 65 -> BlockFace.DOWN
+                                yaw in -45f..45f -> BlockFace.SOUTH
+                                yaw in 45.1f..135f -> BlockFace.WEST
+                                yaw in 135.1f..180f || yaw in -180f..-135.1f -> BlockFace.NORTH
+                                yaw in -135f..-45.1f -> BlockFace.EAST
+                                else -> BlockFace.SELF
+                            }
+                            val moveVector = meta.persistentDataContainer.get(key3, PersistentDataType.FLOAT) ?: 0.1f
+                            val vector = facing.direction.multiply(if (player.isSneaking) moveVector * 2f else moveVector)
+                            multiData.forEach { (e, _) -> e.teleportAsync(e.location.add(vector)) }
+                        }
+
+                        MultiToolCommand.MultiToolMode.ROTATE -> {
+                            val moveVector = (meta.persistentDataContainer.get(key3, PersistentDataType.FLOAT)?.times(10f)) ?: 1f
+                            println("Move $moveVector")
+                            multiData.forEach { (e, _) ->
+                                e.teleportAsync(e.location.apply {
+                                    if (player.isSneaking) pitch = rotateLocking(pitch, moveVector)
+                                    else yaw = rotateLocking(yaw, moveVector)
+                                })
+                            }
+                        }
+                    }
+
+                } else {
+                    if (player.isSneaking) {
+                        //Delete Selection
+                        player.sendMessage(prefix + cmp("Removed ${multiData.size} entities!"))
+                        multiData.forEach { (e, _) -> e.remove() }
+                        multiData.clear()
+                    } else {
+                        //Select
+                        val typeString = meta.persistentDataContainer.get(key) ?: return@listen
+                        val radius = meta.persistentDataContainer.get(key2, PersistentDataType.FLOAT) ?: return@listen
+                        val type = enumOf<EntityType>(typeString) ?: return@listen
+                        val start = player.location.add(0.0, 1.5, 0.0)
+                        if (type == EntityType.BLOCK_DISPLAY) {
+                            raycast(start, start.yaw - 90, start.pitch, multiSettings.range) { loc ->
+                                loc.world.spawnParticle(Particle.COMPOSTER, loc, 1, .0, .0, .0, 0.1)
+                                val vec = Vector(loc.x, loc.y, loc.z)
+                                loc.getNearbyEntitiesByType(BlockDisplay::class.java, 3.0).forEach { bd ->
+                                    if (multiData.contains(bd)) return@forEach
+                                    val bdLoc = bd.location
+                                    val transformation = bd.transformation
+                                    val translation = transformation.translation
+                                    val scale = transformation.scale
+                                    val sourceVec = Vector(bdLoc.x + translation.x, bdLoc.y + translation.y, bdLoc.z + translation.z)
+                                    val boundingBox = BoundingBox.of(
+                                        sourceVec,
+                                        sourceVec.clone().add(Vector(scale.x, scale.y, scale.z))
+                                    )
+                                    if (!boundingBox.contains(vec)) return@forEach
+                                    multiData[bd] = bd.block.clone()
+                                    val material = bd.block.material
+                                    val highlightData = when {
+                                        Tag.STAIRS.isTagged(material) -> {
+                                            val sData = bd.block as Stairs
+                                            (Bukkit.createBlockData(Material.BAMBOO_STAIRS) as Stairs).apply {
+                                                facing = sData.facing
+                                                shape = sData.shape
+                                                half = sData.half
+                                                isWaterlogged = sData.isWaterlogged
+                                            }
+                                        }
+
+                                        Tag.WALLS.isTagged(material) -> {
+                                            val sData = bd.block as Wall
+                                            (Bukkit.createBlockData(Material.END_STONE_BRICK_WALL) as Wall).apply {
+                                                isUp = sData.isUp
+                                                listOf(BlockFace.NORTH, BlockFace.EAST, BlockFace.WEST, BlockFace.SOUTH).forEach { face ->
+                                                    setHeight(face, sData.getHeight(face))
+                                                }
+                                                isWaterlogged = sData.isWaterlogged
+                                            }
+                                        }
+
+                                        Tag.FENCES.isTagged(material) -> {
+                                            val sData = bd.block as Fence
+                                            (Bukkit.createBlockData(Material.BAMBOO_FENCE) as Fence).apply {
+                                                listOf(BlockFace.NORTH, BlockFace.EAST, BlockFace.WEST, BlockFace.SOUTH).forEach { face ->
+                                                    setFace(face, sData.hasFace(face))
+                                                }
+                                                isWaterlogged = sData.isWaterlogged
+                                            }
+                                        }
+
+                                        else -> Bukkit.createBlockData(Material.YELLOW_CONCRETE)
+                                    }
+                                    bd.block = highlightData
+                                }
+                            }
+                        } else {
+                            raycast(start, start.yaw - 90, start.pitch, multiSettings.range) { loc ->
+                                loc.world.spawnParticle(Particle.COMPOSTER, loc, 1, .0, .0, .0, 0.1)
+                                loc.getNearbyEntitiesByType(type.entityClass, radius.toDouble()).forEach { e ->
+                                    if (e is LivingEntity) e.isGlowing = true
+                                    multiData[e] = false
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             else -> Unit
         }
 
         cooldown.add(player)
         taskRunLater(1) { cooldown.remove(player) }
+    }
+
+    private val onSwap = listen<PlayerSwapHandItemsEvent> {
+        val item = it.offHandItem ?: return@listen
+        val meta = item.itemMeta
+        if (meta.customModel != 100) return@listen
+        when (item.type) {
+            Material.FEATHER -> {
+                it.isCancelled = true
+                val player = it.player
+                val multiData = multiToolSelection[player.uniqueId] ?: return@listen
+                multiData.forEach { (e, data) ->
+                    when (e) {
+                        is LivingEntity -> e.isGlowing = false
+                        is BlockDisplay -> e.block = data as BlockData
+                    }
+                }
+                multiData.clear()
+            }
+
+            else -> Unit
+        }
     }
 
     private val task = task(true, 0, 10) {
@@ -148,8 +251,18 @@ class ConvertorEvent {
                             (-5..5).forEach { z ->
                                 val b = source.world.getBlockAt(source.clone().add(x, y, z))
                                 if (b.type == Material.PINK_STAINED_GLASS_PANE)
-                                    p.spawnParticle(Particle.BLOCK_MARKER, b.location.add(.5,.5,.5), 1, display)
+                                    p.spawnParticle(Particle.BLOCK_MARKER, b.location.add(.5, .5, .5), 1, display)
                             }
+                        }
+                    }
+                }
+
+                Material.FEATHER -> {
+                    if (item.itemMeta?.customModel != 100) return@forEach
+                    val multiData = multiToolSelection[p.uniqueId] ?: return@forEach
+                    multiData.forEach { (e, _) ->
+                        if (e !is LivingEntity && e !is BlockDisplay) {
+                            p.spawnParticle(Particle.VILLAGER_HAPPY, e.location, 2, 0.1, 0.1, 0.1, 0.1)
                         }
                     }
                 }
@@ -158,6 +271,20 @@ class ConvertorEvent {
             }
         }
     }
+
+    private fun rotateLocking(source: Float, vec: Float): Float {
+        println("From $source ($vec) - Potential Target $vec")
+        val target = source + vec
+        return when {
+            source == 0f || source == 90f || source == -90f || source == 180f || source == -180f -> target //unlock after first snap
+            target in -1f..1f -> 0f
+            target in -91f..-89f -> -90f
+            target in 89f..91f -> 90f
+            target in 179f..180f || target in -180f..-179f -> 180f
+            else -> target
+        }
+    }
+
 
     private fun raycast(from: Location, yaw: Float, pitch: Float, distance: Int, search: (Location) -> Unit) {
         val direction = yawPitchToDirection(-yaw, pitch).normalize().mul(-0.1)
