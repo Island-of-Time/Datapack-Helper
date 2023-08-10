@@ -1,7 +1,6 @@
-package de.miraculixx.mweb.gui.logic.data
+package de.miraculixx.webServer.utils.gui.logic.data
 
 import de.miraculixx.webServer.utils.gui.logic.*
-import de.miraculixx.webServer.utils.gui.logic.data.CustomInventory
 
 object InventoryManager {
     /**
