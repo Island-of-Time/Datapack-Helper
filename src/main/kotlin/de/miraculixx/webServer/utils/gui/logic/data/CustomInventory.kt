@@ -1,7 +1,6 @@
 package de.miraculixx.webServer.utils.gui.logic.data
 
-import de.miraculixx.mweb.gui.logic.data.InventoryManager
-import de.miraculixx.mweb.gui.logic.items.ItemProvider
+import de.miraculixx.webServer.utils.gui.logic.items.ItemProvider
 import de.miraculixx.webServer.utils.*
 import de.miraculixx.kpaper.event.listen
 import de.miraculixx.kpaper.event.unregister

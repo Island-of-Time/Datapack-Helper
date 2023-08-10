@@ -1,7 +1,7 @@
 package de.miraculixx.webServer.utils.gui
 
-import de.miraculixx.mweb.gui.logic.data.InventoryManager
-import de.miraculixx.mweb.gui.logic.items.ItemProvider
+import de.miraculixx.webServer.utils.gui.logic.data.InventoryManager
+import de.miraculixx.webServer.utils.gui.logic.items.ItemProvider
 import de.miraculixx.webServer.utils.gui.logic.GUIEvent
 import org.bukkit.entity.Player
 

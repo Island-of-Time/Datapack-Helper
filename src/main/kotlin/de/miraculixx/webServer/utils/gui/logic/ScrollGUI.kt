@@ -2,8 +2,8 @@ package de.miraculixx.webServer.utils.gui.logic
 
 import de.miraculixx.kpaper.items.KHeads
 import de.miraculixx.webServer.utils.gui.logic.data.CustomInventory
-import de.miraculixx.mweb.gui.logic.data.InventoryManager
-import de.miraculixx.mweb.gui.logic.items.ItemProvider
+import de.miraculixx.webServer.utils.gui.logic.data.InventoryManager
+import de.miraculixx.webServer.utils.gui.logic.items.ItemProvider
 import de.miraculixx.kpaper.items.customModel
 import de.miraculixx.kpaper.items.itemStack
 import de.miraculixx.kpaper.items.meta

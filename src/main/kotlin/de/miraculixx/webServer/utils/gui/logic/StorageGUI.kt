@@ -3,8 +3,8 @@ package de.miraculixx.webServer.utils.gui.logic
 import de.miraculixx.kpaper.extensions.kotlin.toMap
 import de.miraculixx.kpaper.items.KHeads
 import de.miraculixx.webServer.utils.gui.logic.data.CustomInventory
-import de.miraculixx.mweb.gui.logic.items.ItemFilterProvider
-import de.miraculixx.mweb.gui.logic.items.ItemProvider
+import de.miraculixx.webServer.utils.gui.logic.items.ItemFilterProvider
+import de.miraculixx.webServer.utils.gui.logic.items.ItemProvider
 import de.miraculixx.kpaper.items.customModel
 import de.miraculixx.kpaper.items.itemStack
 import de.miraculixx.kpaper.items.meta
