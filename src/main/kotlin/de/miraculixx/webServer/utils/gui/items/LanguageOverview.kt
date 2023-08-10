@@ -5,7 +5,7 @@ import de.miraculixx.kpaper.items.customModel
 import de.miraculixx.kpaper.items.itemStack
 import de.miraculixx.kpaper.items.meta
 import de.miraculixx.kpaper.items.name
-import de.miraculixx.mweb.gui.logic.items.ItemProvider
+import de.miraculixx.webServer.utils.gui.logic.items.ItemProvider
 import de.miraculixx.webServer.utils.gui.logic.items.skullTexture
 import de.miraculixx.webServer.command.MessageOverview
 import de.miraculixx.webServer.utils.*
