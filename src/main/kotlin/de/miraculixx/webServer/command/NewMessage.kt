@@ -1,16 +1,16 @@
 package de.miraculixx.webServer.command
 
+import de.miraculixx.kpaper.extensions.console
 import de.miraculixx.webServer.utils.*
 import dev.jorel.commandapi.arguments.ArgumentSuggestions
 import dev.jorel.commandapi.arguments.StringArgument
 import dev.jorel.commandapi.kotlindsl.*
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
-import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.event.ClickEvent
 import net.kyori.adventure.text.minimessage.MiniMessage
-import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer
 import org.bukkit.Bukkit
 import java.io.File
 import java.util.*
@@ -21,42 +21,111 @@ class NewMessage {
     private val chatClearer = "{\"text\":\"\\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n\"}"
 
     val command = commandTree("message") {
-        textArgument("prefix") {
-            textArgument("message") {
-                argument(StringArgument("lang").replaceSuggestions(ArgumentSuggestions.strings("german", "english"))) {
-                    textArgument("name") {
-                        textArgument("target") {
-                            anyExecutor { sender, args ->
-                                val prefix = args[0] as String
-                                val message = args[1] as String
-                                val lang = args[2] as String
-                                val name = args[3] as String
-                                val targets = args[4] as String
+        literalArgument("new") {
+            textArgument("prefix") {
+                textArgument("message") {
+                    argument(StringArgument("lang").replaceSuggestions(ArgumentSuggestions.strings("german", "english"))) {
+                        textArgument("name") {
+                            textArgument("target") {
+                                anyExecutor { sender, args ->
+                                    val prefix = args[0] as String
+                                    val message = args[1] as String
+                                    val lang = args[2] as String
+                                    val name = args[3] as String
+                                    val targets = args[4] as String
 
-                                val functionData = FunctionInfo(lang, name, UUID.randomUUID().toString(), targets, prefix, 1)
-                                sender.calculateMessage(message, functionData)
-                                sender.sendMessage(cmp("Final Message: ") + mm.deserialize(message))
-                                sender.sendMessage(cmp("(Click here to play animation)").clickEvent(ClickEvent.runCommand("/function $lang:$name")))
-                                Bukkit.reloadData()
+                                    val functionData = FunctionInfo(lang, name, UUID.randomUUID().toString(), targets, prefix, 1)
+                                    calculateMessage(message, functionData)
+                                    sender.sendMessage(cmp("Final Message: ") + mm.deserialize(message))
+                                    sender.sendMessage(cmp("(Click here to play animation)").clickEvent(ClickEvent.runCommand("/function $lang:$name")))
+                                    Bukkit.reloadData()
+                                }
                             }
                         }
                     }
                 }
             }
         }
+
+
+        literalArgument("validate") {
+            anyExecutor { sender, _ ->
+                val globals = getFileNamesInFolder(File(datapackFile, "chat/functions"))
+                val germans = getFileNamesInFolder(File(datapackFile, "german/functions"))
+                val english = getFileNamesInFolder(File(datapackFile, "english/functions"))
+                germans.toMutableSet().apply { removeAll(globals) }.forEach { name ->
+                    sender.sendMessage(prefix + cmp("Missing global for german ") + cmp(name, cMark) + cmp("! Creating it..."))
+                    File(datapackFile, "chat/functions/$name.mcfunction").apply { parentFile.mkdirs() }.writeGlobal(name)
+                }
+                english.toMutableSet().apply { removeAll(globals) }.forEach { name ->
+                    sender.sendMessage(prefix + cmp("Missing global for english ") + cmp(name, cMark) + cmp("! Creating it..."))
+                    File(datapackFile, "chat/functions/$name.mcfunction").apply { parentFile.mkdirs() }.writeGlobal(name)
+                }
+                globals.toMutableSet().apply { removeAll(germans) }.forEach { name ->
+                    sender.sendMessage(prefix + cmp("Missing german translation of ") + cmp(name, cMark))
+                }
+                globals.toMutableSet().apply { removeAll(english) }.forEach { name ->
+                    sender.sendMessage(prefix + cmp("Missing english translation of ") + cmp(name, cMark))
+                }
+                sender.sendMessage(prefix + cmp("Validation complete!", cSuccess))
+                Bukkit.reloadData()
+            }
+        }
+
+        literalArgument("conversation") {
+            textArgument("file") {
+                argument(StringArgument("lang").replaceSuggestions(ArgumentSuggestions.strings("german", "english"))) {
+                    anyExecutor { sender, args ->
+                        val name = args[0] as String
+                        val lang = args[1] as String
+                        val file = File(datapackFile, "$lang/functions/$name.json")
+                        if (!file.exists()) {
+                            sender.sendMessage(prefix + cmp("The requested file does not exist!", cError))
+                            return@anyExecutor
+                        }
+                        val rawJson = file.readText()
+                        val convData = try {
+                            json.decodeFromString<Conversation>(rawJson)
+                        } catch (e: Exception) {
+                            sender.sendMessage(prefix + cmp("Failed to build conversation:", cError))
+                            sender.sendMessage(prefix + cmp(e.message ?: "Unknown", cError))
+                            console.sendMessage(cmp(e.stackTraceToString(), cError))
+                            return@anyExecutor
+                        }
+                        val folderPath = name.substringBeforeLast('/')
+                        var prev = ""
+                        convData.content.forEachIndexed { index, entry ->
+                            val functionData = FunctionInfo(lang, "$folderPath/${index + 1}", UUID.randomUUID().toString(), convData.target, "$prev<br><br>${entry.prefix}", 1)
+                            calculateMessage(entry.text, functionData)
+                            prev += "<br><br>${entry.prefix}${entry.text}"
+                        }
+                        Bukkit.reloadData()
+                        sender.sendMessage(prefix + cmp("Conversation successfully build to $name", cSuccess))
+                    }
+                }
+            }
+        }
     }
 
-    private fun Audience.calculateMessage(message: String, data: FunctionInfo) {
-        val targetFile = File(datapackFile, "${data.lang}/functions/${data.functionName}.mcfunction")
-        if (!targetFile.exists()) targetFile.parentFile.mkdirs()
-        val namespace = data.scoreName
-        val prefix = gson.serialize(mm.deserialize(data.prefix))
+    private fun getFileNamesInFolder(folder: File?): Set<String> {
+        return buildSet {
+            folder?.takeIf { it.isDirectory }?.listFiles()?.forEach { file ->
+                if (file.isDirectory) addAll(getFileNamesInFolder(file))
+                else add(file.path.substringAfter("functions/").removeSuffix(".mcfunction"))
+            }
+        }
+    }
 
-        val infoData = MessageOverview.FunctionInfo(message, data.prefix, data.target)
+    private fun calculateMessage(message: String, data: FunctionInfo) {
+        val targetFile = File(datapackFile, "${data.lang}/functions/${data.functionName}.mcfunction")
+        val globalFile = File(datapackFile, "chat/functions/${data.functionName}.mcfunction")
+        if (!targetFile.exists()) targetFile.parentFile.mkdirs()
+        if (!globalFile.exists()) globalFile.parentFile.mkdirs()
+        val namespace = data.scoreName
+        val prefix = gson.serialize(mm.deserialize(data.prefix.replace("①", "").replace("⑤", "").replace("⑳","")))
+
         val final = buildString {
             append(
-                "#${Json.encodeToString(infoData)}\n" +
-                        "#\n" +
                         "# Message Convertor (by Miraculixx & To_Binio)\n" +
                         "#\n" +
                         "# Settings Input\n" +
@@ -76,8 +145,19 @@ class NewMessage {
                         "execute if score $namespace text-ticker matches ${iterations + 1}.. run scoreboard players set $namespace text-ticker 0"
             )
         }
-        println(targetFile.absolutePath)
         targetFile.writeText(final)
+        globalFile.writeGlobal(data.functionName)
+    }
+
+    private fun File.writeGlobal(name: String) {
+        writeText(
+            "# Message Convertor (by Miraculixx & To_Binio)\n" +
+                    "#\n" +
+                    "# Language Redirection\n" +
+                    "# - Target: ../../<lang>/functions/${name}\n\n" +
+                    "execute if score language state matches 1 run function german:${name}\n" +
+                    "execute if score language state matches 2 run function english:${name}"
+        )
     }
 
     private fun calcFunctionBody(
@@ -102,14 +182,17 @@ class NewMessage {
                             isTag = true
                             return@forEach
                         }
+
                         '①' -> {
                             functionInfo.currentTick++
                             return@forEach
                         }
+
                         '⑤' -> {
                             functionInfo.currentTick += 5
                             return@forEach
                         }
+
                         '⑳' -> {
                             functionInfo.currentTick += 20
                             return@forEach
@@ -128,18 +211,6 @@ class NewMessage {
     }
 
     @Serializable
-    private data class TextStyling(
-        val extra: List<TextStyling>? = null,
-        val color: String? = null,
-        val bold: Boolean? = null,
-        val italic: Boolean? = null,
-        val underlined: Boolean? = null,
-        val strikethrough: Boolean? = null,
-        val obfuscated: Boolean? = null,
-        val text: String? = null
-    )
-
-    @Serializable
     private data class FunctionInfo(
         val lang: String,
         val functionName: String,
@@ -147,5 +218,17 @@ class NewMessage {
         val target: String,
         val prefix: String,
         var currentTick: Int,
+    )
+
+    @Serializable
+    private data class Conversation(
+        val target: String,
+        val content: List<ConversationText>
+    )
+
+    @Serializable
+    private data class ConversationText(
+        val prefix: String,
+        val text: String
     )
 }
