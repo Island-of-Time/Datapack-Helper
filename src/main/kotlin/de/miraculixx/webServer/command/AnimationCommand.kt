@@ -42,7 +42,7 @@ class AnimationCommand {
         literalArgument("finish") {
             booleanArgument("close") {
                 integerArgument("ticks") {
-                    entitySelectorArgumentOneEntity("target") {
+                    entitySelectorArgumentManyEntities("target") {
                         playerExecutor { player, args ->
                             val data = creators[player.uniqueId] ?: return@playerExecutor
                             val ticks = args[1] as Int
@@ -61,13 +61,13 @@ class AnimationCommand {
                                 val xz = pointsXZ[index]
                                 val xy = pointsXY[index]
                                 val v = pointsView[index]
-                                Location(world, xz.x, xy.y, xz.y, v.x.toFloat(), v.y.toFloat())
+                                Location(world, xz.x, xy.y, xz.y, v.x.toFloat().takeIf { it.isFinite() } ?: 0f, v.y.toFloat().takeIf { it.isFinite() } ?: 0f)
                             }
 
+                            val targets = args[2] as List<Entity>
                             task(period = 1, howOften = pointsView.size.toLong()) {
                                 val point = data.interpolation.getOrNull(it.counterUp!!.toInt()) ?: return@task
-                                val target = args[2] as Entity
-                                target.teleport(point)
+                                targets.forEach { e -> e.teleport(point) }
                             }
                         }
                     }
@@ -97,7 +97,8 @@ class AnimationCommand {
                             var ticker = 1
                             data.interpolation.forEach { pos ->
                                 //execute if score c1e27c23-8bcd-40fa-84f3-96dd918e9e6c text-ticker matches <x> run teleport <target> <location>
-                                append("\nexecute if score $scoreID text-ticker matches $ticker run teleport $target ${pos.x} ${pos.y} ${pos.z} ${pos.yaw} ${pos.pitch}")
+                                append("\nexecute if score $scoreID text-ticker matches $ticker run teleport $target ${pos.x} ${pos.y} ${pos.z} " +
+                                        "${pos.yaw.takeIf { it.isFinite() } ?: 0f} ${pos.pitch.takeIf { it.isFinite() } ?: 0f}")
                                 ticker++
                             }
 

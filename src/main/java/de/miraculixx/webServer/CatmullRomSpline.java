@@ -360,7 +360,7 @@ public class CatmullRomSpline
     private void updateInterpolatedPoints(int index, 
         int stepsInCurrentSegment, int lastStepInSegment)
     {
-        Point2D p0 = controlPoints.get(index + 0);
+        Point2D p0 = controlPoints.get(index);
         Point2D p1 = controlPoints.get(index + 1);
         Point2D p2 = controlPoints.get(index + 2);
         Point2D p3 = controlPoints.get(index + 3);
