@@ -109,7 +109,6 @@ class ConvertorEvent {
 
                         MultiToolCommand.MultiToolMode.ROTATE -> {
                             val moveVector = (meta.persistentDataContainer.get(key3, PersistentDataType.FLOAT)?.times(10f)) ?: 1f
-                            println("Move $moveVector")
                             multiData.forEach { (e, _) ->
                                 e.teleportAsync(e.location.apply {
                                     if (player.isSneaking) pitch = rotateLocking(pitch, moveVector)
