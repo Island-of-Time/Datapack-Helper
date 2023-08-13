@@ -30,6 +30,9 @@ class Main : KPaper() {
         ReloadDataPackCommand()
         MarkerCommand()
         MultiToolCommand()
+        QuestBookCommand()
+        HitBoxCommand()
+        NameTagCommand()
     }
 
     override fun startup() {
