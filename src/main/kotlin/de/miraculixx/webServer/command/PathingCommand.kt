@@ -23,16 +23,17 @@ import org.bukkit.Location
 import org.bukkit.entity.Entity
 import org.joml.Vector3d
 import java.io.File
+import java.text.DecimalFormat
 import java.util.*
 import kotlin.math.PI
 import kotlin.math.abs
 import kotlin.math.atan2
-import kotlin.math.nextDown
 import kotlin.time.Duration.Companion.milliseconds
 
 class PathingCommand {
     private val creators: MutableMap<UUID, PathingData> = mutableMapOf()
     private val dataPackFolder = File("world/datapacks/iot-general/data/animation/functions")
+    private val format = DecimalFormat("#").apply { maximumFractionDigits = 4 }
 
     val command = commandTree("pathing") {
         literalArgument("new") {
@@ -212,19 +213,16 @@ class PathingCommand {
                         val lastCurrent = lastPoint ?: current
                         val animationData = animateFromTo(lastCurrent, current, action.time!!)
                         append(
-                            "\nexecute if score $uuid text-ticker matches $counter as $target at @s run tp @s ${lastCurrent.x} ${lastCurrent.y} ${lastCurrent.z} ${
-                                lastCurrent.yaw.round(
-                                    3
-                                )
-                            } ${lastCurrent.pitch.round(3)}"
+                            "\nexecute if score $uuid text-ticker matches $counter as $target at @s run tp @s ${lastCurrent.x.format()} ${lastCurrent.y.format()} ${lastCurrent.z.format()} " +
+                                    "${lastCurrent.yaw.format()} ${lastCurrent.pitch.format()}"
                         )
                         val relativeMovement = animationData.first.firstOrNull()
                         val counterTo = counter + animationData.first.size
                         if (relativeMovement != null)
-                            append("\nexecute if score $uuid text-ticker matches $counter..$counterTo as $target at @s run tp @s ~${relativeMovement.x} ~${relativeMovement.y} ~${relativeMovement.z} ${relativeMovement.yaw} ~")
+                            append("\nexecute if score $uuid text-ticker matches $counter..$counterTo as $target at @s run tp @s ~${relativeMovement.x.format()} ~${relativeMovement.y.format()} ~${relativeMovement.z.format()} ${relativeMovement.yaw.format()} ~")
                         counter = counterTo
                         val finalLoc = animationData.second
-                        append("\nexecute if score $uuid text-ticker matches $counter as $target at @s run tp @s ${finalLoc.x} ${finalLoc.y} ${finalLoc.z} ${finalLoc.yaw} ${finalLoc.pitch}")
+                        append("\nexecute if score $uuid text-ticker matches $counter as $target at @s run tp @s ${finalLoc.x.format()} ${finalLoc.y.format()} ${finalLoc.z.format()} ${finalLoc.yaw.format()} ${finalLoc.pitch.format()}")
                         lastPoint = current
                         counter++
                     }
@@ -308,6 +306,8 @@ class PathingCommand {
             vec.x, vec.y, vec.z
         ).apply { yaw = vec.yaw })
     }
+
+    private fun Number.format() = format.format(this)
 
     @Serializable
     private data class PathingJsonData(val target: String, val actions: MutableList<PathingAction>)
