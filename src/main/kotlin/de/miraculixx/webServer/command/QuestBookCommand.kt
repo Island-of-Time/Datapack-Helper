@@ -1,8 +1,6 @@
 package de.miraculixx.webServer.command
 
 import de.miraculixx.kpaper.extensions.bukkit.plus
-import de.miraculixx.kpaper.items.itemStack
-import de.miraculixx.kpaper.items.meta
 import de.miraculixx.webServer.utils.addHover
 import de.miraculixx.webServer.utils.cmp
 import dev.jorel.commandapi.kotlindsl.anyExecutor
@@ -14,8 +12,6 @@ import net.kyori.adventure.text.format.Style
 import net.kyori.adventure.text.format.TextColor
 import net.kyori.adventure.text.format.TextDecoration
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer
-import org.bukkit.Material
-import org.bukkit.inventory.meta.BookMeta
 import java.io.File
 
 class QuestBookCommand {
@@ -25,7 +21,7 @@ class QuestBookCommand {
     val command = commandTree("quest-book") {
         integerArgument("chapter") {
             integerArgument("quests") {
-                anyExecutor { sender, args ->
+                anyExecutor { _, args ->
                     val chapter = args[0] as Int
                     val quests = args[1] as Int
                     val folder = File(datapackFile, "chapter$chapter")
@@ -36,17 +32,16 @@ class QuestBookCommand {
                         val file = File(folder, "${it + 1}.mcfunction")
                         val content = buildString {
                             append("{display:{Name:'{\"translate\":\"custom.inv.quest-book\"}'},title:'',author:'',generation:3,pages:[")
-                            when (it) {
-                                in 0..4 -> append("'${getPageContent(0, it, chapter)}'")
-                                in 5..11 -> append(",'${getPageContent(5, it, chapter)}'")
-                            }
+                            append("'${getPageContent((it - 5).coerceAtLeast(0), it, chapter)}'")
                             append("]} 1")
-                        }.replace("\\n","\\\\n")
-                        file.writeText("execute as @a at @s run playsound minecraft:custom.new-note master @s ~ ~ ~ 0.4 1\n" +
-                                "title @a times 20 60 30\n" +
-                                "title @a subtitle {\"translate\":\"custom.quest.title.new\"}\n" +
-                                "title @a title \" \"\n" +
-                                "item replace entity @a hotbar.8 with minecraft:written_book$content\n")
+                        }.replace("\\n", "\\\\n")
+                        file.writeText(
+                            "execute as @a at @s run playsound minecraft:custom.new-note master @s ~ ~ ~ 0.4 1\n" +
+                                    "title @a times 20 60 30\n" +
+                                    "title @a subtitle {\"translate\":\"custom.quest.title.new\"}\n" +
+                                    "title @a title \" \"\n" +
+                                    "item replace entity @a hotbar.8 with minecraft:written_book$content\n"
+                        )
                     }
                 }
             }

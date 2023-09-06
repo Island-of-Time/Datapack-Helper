@@ -32,18 +32,23 @@ object Zipping {
             if (file.isDirectory) {
                 zipFolder(file, relativePath, zos)
             } else {
-                val fis = FileInputStream(file)
-                val entry = ZipEntry(relativePath)
+                try {
+                    val fis = FileInputStream(file)
+                    val entry = ZipEntry(relativePath)
 
-                zos.putNextEntry(entry)
+                    zos.putNextEntry(entry)
 
-                val buffer = ByteArray(1024)
-                var len: Int
-                while (fis.read(buffer).also { len = it } > 0) {
-                    zos.write(buffer, 0, len)
+                    val buffer = ByteArray(1024)
+                    var len: Int
+                    while (fis.read(buffer).also { len = it } > 0) {
+                        zos.write(buffer, 0, len)
+                    }
+
+                    fis.close()
+                } catch (e: Exception) {
+                    consoleSender.sendMessage(prefix + cmp("Failed to zip all folders together!", cError))
+                    consoleSender.sendMessage(prefix + cmp("Reason: ${e.message ?: "Unknown"}", cError))
                 }
-
-                fis.close()
             }
         }
     }

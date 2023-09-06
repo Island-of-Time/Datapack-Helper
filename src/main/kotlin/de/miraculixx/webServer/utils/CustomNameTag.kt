@@ -11,7 +11,8 @@ object CustomNameTag {
     private val specialCharIndex = "#-?!.,:;".toCharArray()
     private val white = Color(255,255,255,255).rgb
 
-    fun createNewNameTag(content: String, destination: File, mainColor: Int, shadowColor: Int, charShadowColor: Int) {
+    fun createNewNameTag(content: String, destination: File, mainColor: Int, shadowColor: Int, charShadowColor: Int, charColor: Int) {
+        println("Main: $mainColor Shadow: $shadowColor Char: $charShadowColor")
         var globalWidth = 2 + 3
         val globalHeight = 8
 
@@ -52,10 +53,9 @@ object CustomNameTag {
                         2 -> specialCharIndex.indexOf(charData.char)
                         else -> return@forEach
                     } * 5 + x
-                    println("$xPos - ${y + (charData.row * 6)}")
                     val pixel = spriteSheet.getRGB(xPos, y + (charData.row * 6))
                     if (pixel == white) {
-                        finalImage.setRGB(widthCounter + x, 1 + y, white)
+                        finalImage.setRGB(widthCounter + x, 1 + y, charColor)
                         finalImage.setRGB(widthCounter + x + 1, 1 + y, charShadowColor)
                     }
                 }

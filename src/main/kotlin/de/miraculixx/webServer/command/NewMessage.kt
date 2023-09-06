@@ -1,14 +1,13 @@
 package de.miraculixx.webServer.command
 
 import de.miraculixx.kpaper.extensions.console
+import de.miraculixx.webServer.settings
 import de.miraculixx.webServer.utils.*
 import dev.jorel.commandapi.arguments.ArgumentSuggestions
 import dev.jorel.commandapi.arguments.StringArgument
 import dev.jorel.commandapi.kotlindsl.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import net.kyori.adventure.text.event.ClickEvent
 import net.kyori.adventure.text.minimessage.MiniMessage
 import org.bukkit.Bukkit
@@ -16,15 +15,18 @@ import java.io.File
 import java.util.*
 
 class NewMessage {
-    private val datapackFile = File("world/datapacks/iot-chat/data")
+    private val datapackFile
+        get() = File("world/datapacks/${settings.messageFolder}/data")
     private val mm = MiniMessage.miniMessage()
     private val chatClearer = "{\"text\":\"\\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n\"}"
 
     val command = commandTree("message") {
+        withPermission("buildertools.message")
+
         literalArgument("new") {
             textArgument("prefix") {
                 textArgument("message") {
-                    argument(StringArgument("lang").replaceSuggestions(ArgumentSuggestions.strings("german", "english"))) {
+                    argument(StringArgument("lang").replaceSuggestions(ArgumentSuggestions.stringCollection { settings.messageLanguages })) {
                         textArgument("name") {
                             textArgument("target") {
                                 anyExecutor { sender, args ->
@@ -51,21 +53,17 @@ class NewMessage {
         literalArgument("validate") {
             anyExecutor { sender, _ ->
                 val globals = getFileNamesInFolder(File(datapackFile, "chat/functions"))
-                val germans = getFileNamesInFolder(File(datapackFile, "german/functions"))
-                val english = getFileNamesInFolder(File(datapackFile, "english/functions"))
-                germans.toMutableSet().apply { removeAll(globals) }.forEach { name ->
-                    sender.sendMessage(prefix + cmp("Missing global for german ") + cmp(name, cMark) + cmp("! Creating it..."))
-                    File(datapackFile, "chat/functions/$name.mcfunction").apply { parentFile.mkdirs() }.writeGlobal(name)
-                }
-                english.toMutableSet().apply { removeAll(globals) }.forEach { name ->
-                    sender.sendMessage(prefix + cmp("Missing global for english ") + cmp(name, cMark) + cmp("! Creating it..."))
-                    File(datapackFile, "chat/functions/$name.mcfunction").apply { parentFile.mkdirs() }.writeGlobal(name)
-                }
-                globals.toMutableSet().apply { removeAll(germans) }.forEach { name ->
-                    sender.sendMessage(prefix + cmp("Missing german translation of ") + cmp(name, cMark))
-                }
-                globals.toMutableSet().apply { removeAll(english) }.forEach { name ->
-                    sender.sendMessage(prefix + cmp("Missing english translation of ") + cmp(name, cMark))
+                val languages = settings.messageLanguages
+                languages.forEach { lang ->
+                    val messages = getFileNamesInFolder(File(datapackFile, "$lang/functions"))
+                    messages.toMutableSet().apply { removeAll(globals) }.forEach { name ->
+                        sender.sendMessage(prefix + cmp("Missing global for $lang ") + cmp(name, cMark) + cmp("! Creating it..."))
+                        File(datapackFile, "chat/functions/$name.mcfunction").apply { parentFile.mkdirs() }.writeGlobal(name)
+                    }
+
+                    globals.toMutableSet().apply { removeAll(messages) }.forEach { name ->
+                        sender.sendMessage(prefix + cmp("Missing $lang translation of ") + cmp(name, cMark))
+                    }
                 }
                 sender.sendMessage(prefix + cmp("Validation complete!", cSuccess))
                 Bukkit.reloadData()
@@ -74,7 +72,7 @@ class NewMessage {
 
         literalArgument("conversation") {
             textArgument("file") {
-                argument(StringArgument("lang").replaceSuggestions(ArgumentSuggestions.strings("german", "english"))) {
+                argument(StringArgument("lang").replaceSuggestions(ArgumentSuggestions.stringCollection { settings.messageLanguages })) {
                     anyExecutor { sender, args ->
                         val name = args[0] as String
                         val lang = args[1] as String
@@ -122,11 +120,11 @@ class NewMessage {
         if (!targetFile.exists()) targetFile.parentFile.mkdirs()
         if (!globalFile.exists()) globalFile.parentFile.mkdirs()
         val namespace = data.scoreName
-        val prefix = gson.serialize(mm.deserialize(data.prefix.replace("①", "").replace("⑤", "").replace("⑳","")))
+        val prefix = gson.serialize(mm.deserialize(data.prefix.replace("①", "").replace("⑤", "").replace("⑳", "")))
 
         val final = buildString {
             append(
-                        "# Message Convertor (by Miraculixx & To_Binio)\n" +
+                "# Message Animator (by Miraculixx & To_Binio)\n" +
                         "#\n" +
                         "# Settings Input\n" +
                         "# - Text: $message\n" +

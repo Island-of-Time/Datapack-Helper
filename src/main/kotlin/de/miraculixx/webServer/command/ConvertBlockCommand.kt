@@ -1,62 +1,97 @@
+@file:Suppress("unused")
+
 package de.miraculixx.webServer.command
 
 import de.miraculixx.kpaper.items.customModel
 import de.miraculixx.kpaper.items.itemStack
 import de.miraculixx.kpaper.items.meta
 import de.miraculixx.kpaper.items.name
-import de.miraculixx.webServer.Main
+import de.miraculixx.webServer.events.ToolEvent.key
+import de.miraculixx.webServer.events.ToolEvent.key2
+import de.miraculixx.webServer.events.ToolEvent.key3
 import de.miraculixx.webServer.utils.cError
 import de.miraculixx.webServer.utils.cmp
+import de.miraculixx.webServer.utils.plus
+import de.miraculixx.webServer.utils.prefix
 import dev.jorel.commandapi.arguments.LocationType
 import dev.jorel.commandapi.kotlindsl.*
 import org.bukkit.Location
 import org.bukkit.Material
-import org.bukkit.NamespacedKey
+import org.bukkit.enchantments.Enchantment
 import org.bukkit.entity.BlockDisplay
 import org.bukkit.entity.EntityType
+import org.bukkit.inventory.ItemFlag
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.util.Transformation
 import org.joml.Quaternionf
 import org.joml.Vector3f
+import kotlin.jvm.optionals.getOrNull
 
 class ConvertBlockCommand {
-    val convertCommand = commandTree("convertblock") {
+    private val convertCommand = commandTree("blockify") {
+        withPermission("buildertools.blockify")
+
         locationArgument("pos", LocationType.BLOCK_POSITION) {
             stringArgument("tag") {
                 floatArgument("scale") {
-                    playerExecutor { player, args ->
-                        val pos = args[0] as Location
-                        val tag = args[1] as String
-                        val scale = args[2] as Float
-                        val offset = (1.0 - scale) / 2
-                        val bd = pos.world.spawnEntity(pos.clone().add(offset, offset, offset), EntityType.BLOCK_DISPLAY) as BlockDisplay
-                        bd.block = pos.block.blockData
-                        bd.scoreboardTags.add(tag)
-                        bd.transformation = Transformation(Vector3f(0f, 0f, 0f), Quaternionf(0f, 0f, 0f, 1f), Vector3f(scale, scale, scale), Quaternionf(0f, 0f, 0f, 1f))
-                        pos.block.type = Material.AIR
+                    locationArgument("origin", LocationType.BLOCK_POSITION, true) {
+                        playerExecutor { player, args ->
+                            val pos = args[0] as Location
+                            val tag = args[1] as String
+                            val scale = args[2] as Float
+                            val origin = args.getOptional(3).getOrNull() as? Location
+
+                            val offset = (1.0 - scale) / 2
+                            if (origin != null) {
+                                val bd = pos.world.spawnEntity(origin.add(offset + 0.5, offset + 0.5, offset + 0.5), EntityType.BLOCK_DISPLAY) as BlockDisplay
+                                bd.block = pos.block.blockData
+                                bd.scoreboardTags.add(tag)
+                                val center = Vector3f((pos.x - origin.x).toFloat(), (pos.y - origin.y).toFloat(), (pos.z - origin.z).toFloat())
+                                bd.transformation = Transformation(center, Quaternionf(0f, 0f, 0f, 1f), Vector3f(scale, scale, scale), Quaternionf(0f, 0f, 0f, 1f))
+
+                            } else {
+                                val bd = pos.world.spawnEntity(pos.clone().add(offset, offset, offset), EntityType.BLOCK_DISPLAY) as BlockDisplay
+                                bd.block = pos.block.blockData
+                                bd.scoreboardTags.add(tag)
+                                bd.transformation = Transformation(Vector3f(0f, 0f, 0f), Quaternionf(0f, 0f, 0f, 1f), Vector3f(scale, scale, scale), Quaternionf(0f, 0f, 0f, 1f))
+                            }
+
+                            val type = pos.block.type.name
+                            pos.block.type = Material.AIR
+                            player.sendMessage(prefix + cmp("Converted block $type to a block display"))
+                        }
                     }
                 }
             }
         }
     }
 
-    private val key = NamespacedKey(Main.INSTANCE, "webserver.command-item")
-    private val key2 = NamespacedKey(Main.INSTANCE, "webserver.command-item-tag")
-    val items = commandTree("convertor") {
+    private val items = commandTree("blockify-tool") {
+        withPermission("buildertools.blockify-tool")
+
         floatArgument("scale") {
             stringArgument("tag") {
-                playerExecutor { player, args ->
-                    val item = itemStack(Material.SHEARS) {
-                        meta {
-                            val scale = args[0] as Float
-                            val tag = args[1] as String
-                            name = cmp("Convertor: $scale - $tag", cError)
-                            persistentDataContainer.set(key, PersistentDataType.FLOAT, scale)
-                            persistentDataContainer.set(key2, PersistentDataType.STRING, tag)
-                            customModel = 100
+                locationArgument("origin", LocationType.BLOCK_POSITION, true) {
+                    withUsage("Summons the block display at the origin and offset it to clicked location")
+                    playerExecutor { player, args ->
+                        val origin = args.getOptional(2).getOrNull() as? Location
+                        val text = origin?.let { "${it.blockX}:${it.blockY}:${it.blockZ}" }
+                        val item = itemStack(Material.SHEARS) {
+                            meta {
+                                val scale = args[0] as Float
+                                val tag = args[1] as String
+                                name = cmp("Blockify: $scale - $tag ${text?.let { "- $it" } ?: ""}", cError)
+                                persistentDataContainer.set(key, PersistentDataType.FLOAT, scale)
+                                persistentDataContainer.set(key2, PersistentDataType.STRING, tag)
+                                if (text != null) persistentDataContainer.set(key3, PersistentDataType.STRING, text)
+                                customModel = 100
+                                addUnsafeEnchantment(Enchantment.MENDING, 1)
+                                addItemFlags(ItemFlag.HIDE_ENCHANTS)
+                            }
                         }
+                        player.inventory.addItem(item)
+                        player.sendMessage(prefix + cmp("Added blockify tool to your inventory"))
                     }
-                    player.inventory.addItem(item)
                 }
             }
         }

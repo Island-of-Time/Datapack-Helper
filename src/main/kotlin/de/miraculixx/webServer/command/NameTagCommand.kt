@@ -1,9 +1,10 @@
-@file:Suppress("DuplicatedCode")
+@file:Suppress("unused")
 
 package de.miraculixx.webServer.command
 
-import de.miraculixx.kpaper.extensions.bukkit.addCommand
+import com.google.common.primitives.UnsignedInteger
 import de.miraculixx.kpaper.extensions.bukkit.addCopy
+import de.miraculixx.webServer.settings
 import de.miraculixx.webServer.utils.*
 import dev.jorel.commandapi.kotlindsl.anyExecutor
 import dev.jorel.commandapi.kotlindsl.commandTree
@@ -12,41 +13,44 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import net.kyori.adventure.audience.Audience
-import net.kyori.adventure.text.format.TextColor
-import java.awt.Color
 import java.io.File
+import kotlin.jvm.optionals.getOrNull
 
 class NameTagCommand {
-    private val nameTagFolder = File("texturepack/global/assets/minecraft/textures/font/nametags")
-    private val fontFile = File("texturepack/global/assets/minecraft/font/default.json")
+    private val command = commandTree("nametag") {
+        withPermission("buildertools.nametag")
 
-    val command = commandTree("nametag") {
         textArgument("content") {
             textArgument("name") {
                 textArgument("main-color") {
                     textArgument("shadow-color") {
-                        textArgument("char-color") {
-                            anyExecutor { sender, args ->
-                                val content = args[0] as String
-                                val name = args[1] as String
-                                val mainColor = args[2] as String
-                                val shadowColor = args[3] as String
-                                val charShadowColor = args[4] as String
+                        textArgument("char-shadow-color") {
+                            textArgument("char-color", true) {
+                                anyExecutor { sender, args ->
+                                    val content = args[0] as String
+                                    val name = args[1] as String
+                                    val mainColor = args[2] as String
+                                    val shadowColor = args[3] as String
+                                    val charShadowColor = args[4] as String
+                                    val charColor = args.getOptional(5).getOrNull() as? String ?: "ffffffff"
 
-                                CustomNameTag.createNewNameTag(
-                                    content,
-                                    File(nameTagFolder, "$name.png"),
-                                    mainColor.toColor(sender) ?: return@anyExecutor,
-                                    shadowColor.toColor(sender) ?: return@anyExecutor,
-                                    charShadowColor.toColor(sender) ?: return@anyExecutor
-                                )
-                                val font = json.decodeFromString<FontJson>(fontFile.readText())
-                                val escaped = "\\uE${font.providers.size.plus(1).to3Digits()}"
-                                val unescaped = unescapeUnicode(escaped)
-                                font.providers.add(FontChar("bitmap", "minecraft:font/nametags/$name.png", 8, 8, listOf(unescaped)))
-                                fontFile.writeText(json.encodeToString(font))
-                                sender.sendMessage(prefix + cmp("Successfully created a new nametag ") + cmp(name, cMark))
-                                sender.sendMessage(prefix + cmp("$unescaped (copy)").addCopy(unescaped).addHover(cmp("Click to copy")))
+                                    CustomNameTag.createNewNameTag(
+                                        content,
+                                        File("${settings.texturePackFolder}/global/assets/minecraft/textures/font/nametags", "$name.png"),
+                                        mainColor.toColor(sender) ?: return@anyExecutor,
+                                        shadowColor.toColor(sender) ?: return@anyExecutor,
+                                        charShadowColor.toColor(sender) ?: return@anyExecutor,
+                                        charColor.toColor(sender) ?: return@anyExecutor
+                                    )
+                                    val fontFile = File("${settings.texturePackFolder}/global/assets/minecraft/font/default.json")
+                                    val font = json.decodeFromString<FontJson>(fontFile.takeIf { it.exists() }?.readText()?.ifBlank { "{}" } ?: "{}")
+                                    val escaped = "\\uE${font.providers.size.plus(1).to3Digits()}"
+                                    val unescaped = unescapeUnicode(escaped)
+                                    font.providers.add(FontChar("bitmap", "minecraft:font/nametags/$name.png", 8, 8, listOf(unescaped)))
+                                    fontFile.writeText(json.encodeToString(font))
+                                    sender.sendMessage(prefix + cmp("Successfully created a new nametag ") + cmp(name, cMark))
+                                    sender.sendMessage(prefix + cmp("$unescaped (copy)").addCopy(unescaped).addHover(cmp("Click to copy")))
+                                }
                             }
                         }
                     }
@@ -64,11 +68,20 @@ class NameTagCommand {
     }
 
     private fun String.toColor(sender: Audience): Int? {
-        val c = TextColor.fromCSSHexString(this)
-        return if (c == null) {
+        return try {
+            val hex = if (this[0] == '#') substring(1, length) else this
+            when (hex.length) {
+                6 -> UnsignedInteger.valueOf("ff$hex", 16).toInt()
+                8 -> UnsignedInteger.valueOf("${hex[6]}${hex[7]}${hex.substring(0, 6)}", 16).toInt()
+                else -> throw IllegalArgumentException("Color must be 6 (#rrggbb) or 8 (#rrggbbaa) character long")
+            }
+
+        } catch (e: Exception) {
             sender.sendMessage(prefix + cmp("One or more colors aren't valid hex strings", cError))
+            sender.sendMessage(prefix + cmp("(${e.message})", cError))
+            e.printStackTrace()
             null
-        } else Color(c.red(), c.green(), c.blue(), 255).rgb
+        }
     }
 
     private fun unescapeUnicode(input: String): String {
@@ -83,6 +96,7 @@ class NameTagCommand {
 
     @Serializable
     private data class FontJson(val providers: MutableList<FontChar>)
+
     @Serializable
     private data class FontChar(val type: String, val file: String, val ascent: Int, val height: Int, val chars: List<String>)
 }

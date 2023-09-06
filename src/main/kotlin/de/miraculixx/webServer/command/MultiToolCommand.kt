@@ -6,14 +6,15 @@ import de.miraculixx.kpaper.items.customModel
 import de.miraculixx.kpaper.items.itemStack
 import de.miraculixx.kpaper.items.meta
 import de.miraculixx.kpaper.items.name
-import de.miraculixx.webServer.Main
+import de.miraculixx.webServer.events.ToolEvent.key
+import de.miraculixx.webServer.events.ToolEvent.key2
+import de.miraculixx.webServer.events.ToolEvent.key3
 import de.miraculixx.webServer.utils.*
 import dev.jorel.commandapi.kotlindsl.*
 import dev.jorel.commandapi.wrappers.CommandResult
 import dev.jorel.commandapi.wrappers.Rotation
 import org.bukkit.Location
 import org.bukkit.Material
-import org.bukkit.NamespacedKey
 import org.bukkit.entity.Entity
 import org.bukkit.entity.EntityType
 import org.bukkit.persistence.PersistentDataType
@@ -24,11 +25,9 @@ val multiToolData: MutableMap<UUID, MultiToolCommand.MultiToolData> = mutableMap
 val multiToolSelection: MutableMap<UUID, MutableMap<Entity, Any>> = mutableMapOf()
 
 class MultiToolCommand {
-    private val key = NamespacedKey(Main.INSTANCE, "webserver.command-item")
-    private val key2 = NamespacedKey(Main.INSTANCE, "webserver.command-item-tag")
-    private val key3 = NamespacedKey(Main.INSTANCE, "webserver.command-item-tag3")
-
     val command = commandTree("multitool") {
+        withPermission("buildertools.multitool")
+
         literalArgument("get") {
             entityTypeArgument("type") {
                 floatArgument("radius", 0f, 10f, optional = true) {
@@ -82,10 +81,12 @@ class MultiToolCommand {
             rotationArgument("rotation") {
                 playerExecutor { player, args ->
                     val rotation = args[0] as Rotation
-                    multiToolSelection[player.uniqueId]?.forEach { (e, _) -> e.teleportAsync(e.location.apply {
-                        yaw += rotation.normalizedYaw
-                        pitch += rotation.normalizedPitch
-                    }) }
+                    multiToolSelection[player.uniqueId]?.forEach { (e, _) ->
+                        e.teleportAsync(e.location.apply {
+                            yaw += rotation.normalizedYaw
+                            pitch += rotation.normalizedPitch
+                        })
+                    }
                     player.sendMessage(prefix + cmp("Selection rotated by ") + cmp(rotation.toString(), cMark) + cmp(" (clockwise)"))
                 }
             }
@@ -102,6 +103,8 @@ class MultiToolCommand {
         }
 
         literalArgument("execute-as") {
+            withPermission("buildertools.multitool-execute")
+
             commandArgument("command") {
                 playerExecutor { player, args ->
                     val command = args[0] as CommandResult
@@ -122,6 +125,7 @@ class MultiToolCommand {
     data class MultiToolData(
         var mode: MultiToolMode = MultiToolMode.MOVE,
         var range: Int = 3,
+        var confirm: Boolean = false
     )
 
     enum class MultiToolMode {

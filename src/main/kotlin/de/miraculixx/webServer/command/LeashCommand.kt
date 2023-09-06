@@ -1,3 +1,5 @@
+@file:Suppress("unused")
+
 package de.miraculixx.webServer.command
 
 import dev.jorel.commandapi.arguments.LocationType
@@ -13,7 +15,9 @@ import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 
 class LeashCommand {
-    val knotCommand = commandTree("setknot") {
+    val knotCommand = commandTree("leash") {
+        withPermission("buildertools.leash")
+
         locationArgument("pos1", LocationType.BLOCK_POSITION) {
             locationArgument("pos2", LocationType.BLOCK_POSITION) {
                 playerExecutor { player, args ->

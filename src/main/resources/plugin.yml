@@ -1,15 +1,18 @@
-name: Paper-WebServer
+name: BuilderTools
 load: STARTUP
 version: 101
 main: de.miraculixx.webServer.Main
 api-version: 1.16
 authors: [ Miraculixx ]
 description: Paper Webserver - Load files to players or on to the server
-website: https://miraculixx.de/
+website: https://mutils.net/
+depend: [ "MUtils-Web" ]
 libraries:
   - "org.jetbrains.kotlin:kotlin-stdlib:1.8.10"
   - "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta"
   - "org.jetbrains.kotlinx:kotlinx-coroutines-jdk8:1.7.0-Beta"
   - "org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1"
   - "org.zeroturnaround:zt-zip:1.15"
+  - "dev.jorel:commandapi-bukkit-kotlin:9.1.0"
+  - "dev.jorel:commandapi-bukkit-shade:9.1.0"
 

@@ -1,18 +1,21 @@
 package de.miraculixx.webServer.command
 
-import de.miraculixx.webServer.events.TexturePackEvent.loadPlayer1
-import de.miraculixx.webServer.events.TexturePackEvent.loadPlayer2
+import de.miraculixx.webServer.events.TexturePackEvent
+import de.miraculixx.webServer.settings
+import dev.jorel.commandapi.arguments.ArgumentSuggestions
 import dev.jorel.commandapi.kotlindsl.commandTree
-import dev.jorel.commandapi.kotlindsl.literalArgument
 import dev.jorel.commandapi.kotlindsl.playerExecutor
+import dev.jorel.commandapi.kotlindsl.stringArgument
 
 class TexturePackCommand {
     val command = commandTree("texturepack") {
-        literalArgument("player1") {
-            playerExecutor { player, _ -> player.loadPlayer1() }
-        }
-        literalArgument("player2") {
-            playerExecutor { player, _ -> player.loadPlayer2() }
+        stringArgument("group") {
+            replaceSuggestions(ArgumentSuggestions.stringCollection { settings.groupFolders })
+            playerExecutor { player, args ->
+                println(settings.groupFolders.toString())
+                val group = args[0] as String
+                TexturePackEvent.loadTP(group, player, settings.groupFolders)
+            }
         }
     }
 }

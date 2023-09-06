@@ -9,6 +9,7 @@ import de.miraculixx.kpaper.extensions.worlds
 import de.miraculixx.kpaper.runnables.sync
 import de.miraculixx.kpaper.runnables.task
 import de.miraculixx.kpaper.runnables.taskRunLater
+import de.miraculixx.webServer.settings
 import de.miraculixx.webServer.utils.*
 import dev.jorel.commandapi.kotlindsl.*
 import dev.jorel.commandapi.wrappers.CommandResult
@@ -32,10 +33,13 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class PathingCommand {
     private val creators: MutableMap<UUID, PathingData> = mutableMapOf()
-    private val dataPackFolder = File("world/datapacks/iot-general/data/animation/functions")
+    private val dataPackFolder
+        get() = File("world/datapacks/${settings.pathingFolder}/data/animation/functions")
     private val format = DecimalFormat("#").apply { maximumFractionDigits = 4 }
 
     val command = commandTree("pathing") {
+        withPermission("buildertools.pathing")
+
         literalArgument("new") {
             entitySelectorArgumentManyEntities("target") {
                 playerExecutor { player, args ->
@@ -60,7 +64,7 @@ class PathingCommand {
                                 yaw = view.yaw
                                 pitch = view.pitch
                             }
-                            val data = creators[player.uniqueId] ?: return@playerExecutor
+                            val data = creators[player.uniqueId] ?: player.noEditor() ?: return@playerExecutor
                             player.sendMessage(prefix + cmp("Add new control point"))
 
                             //Play the current step
@@ -82,13 +86,15 @@ class PathingCommand {
             integerArgument("delay") {
                 playerExecutor { player, args ->
                     val delay = args[0] as Int
-                    creators[player.uniqueId]?.actions?.add(PathingAction(PathingType.DELAY, time = delay.toDouble())) ?: return@playerExecutor
+                    creators[player.uniqueId]?.actions?.add(PathingAction(PathingType.DELAY, time = delay.toDouble())) ?: player.noEditor() ?: return@playerExecutor
                     player.sendMessage(prefix + cmp("Add $delay ticks delay"))
                 }
             }
         }
 
         literalArgument("add-script") {
+            withPermission("buildertools.multitool-execute")
+
             commandArgument("command") {
                 playerExecutor { player, args ->
                     val command = args[0] as CommandResult
@@ -96,15 +102,36 @@ class PathingCommand {
                         append(command.command.name)
                         command.args.forEach { append(" $it") }
                     }
-                    creators[player.uniqueId]?.actions?.add(PathingAction(PathingType.RUN_SCRIPT, script = finalCommand)) ?: return@playerExecutor
+                    creators[player.uniqueId]?.actions?.add(PathingAction(PathingType.RUN_SCRIPT, script = finalCommand)) ?: player.noEditor() ?: return@playerExecutor
                     player.sendMessage(prefix + cmp("Added new command ") + cmp(finalCommand, cMark).addCommand("/$finalCommand"))
+                }
+            }
+        }
+
+        literalArgument("add-repeat") {
+            integerArgument("amount", 1) {
+                commandArgument("command") {
+                    playerExecutor { player, args ->
+                        val amount = args[0] as Int
+                        val command = args[1] as CommandResult
+                        val finalCommand = buildString {
+                            append(command.command.name)
+                            command.args.forEach { append(" $it") }
+                        }
+                        creators[player.uniqueId]?.actions?.add(PathingAction(PathingType.REPEAT, script = finalCommand, time = amount.toDouble())) ?: player.noEditor() ?: return@playerExecutor
+                        player.sendMessage(prefix + cmp("Added new repeated command ") + cmp(finalCommand, cMark).addCommand("/$finalCommand") + cmp(" ($amount)"))
+                    }
                 }
             }
         }
 
         literalArgument("remove-last") {
             playerExecutor { player, _ ->
-                creators[player.uniqueId]?.actions?.removeLastOrNull() ?: return@playerExecutor
+                val creator = creators[player.uniqueId] ?: player.noEditor() ?: return@playerExecutor
+                if (creator.actions.removeLastOrNull() == null) {
+                    player.sendMessage(prefix + cmp("No points left to remove", cError))
+                    return@playerExecutor
+                }
                 player.sendMessage(prefix + cmp("Removed last action"))
             }
         }
@@ -114,8 +141,8 @@ class PathingCommand {
                 val data = creators[player.uniqueId] ?: return@playerExecutor
                 CoroutineScope(Dispatchers.Default).launch {
                     var lastPoint: Location? = null
-                    val first = data.actions.first { it.type == PathingType.CONTROL_POINT }
-                    sync { data.target.forEach { e -> e.teleport(first.location!!) } }
+                    val first = data.actions.firstOrNull { it.type == PathingType.CONTROL_POINT }
+                    first?.let { l -> sync { data.target.forEach { e -> e.teleport(l.location!!) } } }
                     data.actions.forEach { action ->
                         val delay = when (action.type) {
                             PathingType.CONTROL_POINT -> {
@@ -129,6 +156,14 @@ class PathingCommand {
                             PathingType.RUN_SCRIPT -> {
                                 sync { Bukkit.dispatchCommand(console, "execute as ${data.rawTarget} at @s run ${action.script}") }
                                 1
+                            }
+
+                            PathingType.REPEAT -> {
+                                val amount = action.time!!.toInt()
+                                task(true, period = 1, howOften = amount.toLong()) {
+                                    Bukkit.dispatchCommand(console, "execute as ${data.rawTarget} at @s run ${action.script}")
+                                }
+                                amount
                             }
                         }
 
@@ -233,6 +268,12 @@ class PathingCommand {
                         append("\nexecute if score $uuid text-ticker matches $counter as $target at @s run ${action.script}")
                         counter++
                     }
+
+                    PathingType.REPEAT -> {
+                        val amount = action.time?.toInt() ?: 1
+                        append("\nexecute if score $uuid text-ticker matches $counter..${counter + amount - 1} as $target at @s run ${action.script}")
+                        counter += amount
+                    }
                 }
             }
 
@@ -307,6 +348,11 @@ class PathingCommand {
         ).apply { yaw = vec.yaw })
     }
 
+    private fun Audience.noEditor(): PathingData? {
+        sendMessage(prefix + cmp("You don't have any pathing creator! Create one via /pathing new", cError))
+        return null
+    }
+
     private fun Number.format() = format.format(this)
 
     @Serializable
@@ -325,7 +371,8 @@ class PathingCommand {
     private enum class PathingType {
         CONTROL_POINT,
         DELAY,
-        RUN_SCRIPT
+        RUN_SCRIPT,
+        REPEAT
     }
 
     private enum class CoordinateAxis {
