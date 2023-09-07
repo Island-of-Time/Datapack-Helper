@@ -1,28 +1,24 @@
 package de.miraculixx.webServer.command
 
-import de.miraculixx.kpaper.extensions.kotlin.enumOf
-import de.miraculixx.kpaper.extensions.worlds
-import de.miraculixx.kpaper.items.*
+import de.miraculixx.kpaper.items.customModel
+import de.miraculixx.kpaper.items.itemStack
+import de.miraculixx.kpaper.items.meta
+import de.miraculixx.kpaper.items.name
+import de.miraculixx.webServer.events.ToolEvent.key
+import de.miraculixx.webServer.events.ToolEvent.key2
+import de.miraculixx.webServer.events.ToolEvent.key3
 import de.miraculixx.webServer.utils.cError
 import de.miraculixx.webServer.utils.cmp
 import dev.jorel.commandapi.kotlindsl.*
-import org.bukkit.Location
 import org.bukkit.Material
-import org.bukkit.entity.ArmorStand
-import org.bukkit.entity.Boat
 import org.bukkit.entity.EntityType
-import org.bukkit.entity.Interaction
-import org.bukkit.entity.LivingEntity
-import org.bukkit.entity.Marker
-import org.bukkit.entity.Player
-import org.bukkit.inventory.meta.ItemMeta
 import org.bukkit.persistence.PersistentDataType
 import kotlin.jvm.optionals.getOrNull
 
 class TagToolCommand {
     val command = commandTree("tag-tool") {
         withPermission("buildertools.tag-tool")
-        
+
         entityTypeArgument("filter", true) {
             doubleArgument("radius", 0.1, 10.0, true) {
                 greedyStringArgument("tags") {
@@ -45,24 +41,5 @@ class TagToolCommand {
                 }
             }
         }
-    }
-
-    fun click(player: Player, meta: ItemMeta) {
-        if (!player.hasPermission("buildertools.tag-tool")) return
-
-        val pdc = meta.persistentDataContainer
-        val tags = pdc.get(key, PersistentDataType.STRING)?.split(' ') ?: return
-        val filter = pdc.get(key2, PersistentDataType.STRING)?.let { t -> enumOf<EntityType>(t) }
-        val range = pdc.get(key3, PersistentDataType.DOUBLE) ?: 0.5
-        when (val e = filter?.entityClass) { // Return entities with hitboxes
-            is ArmorStand -> if (!e.isMarker) return
-            is LivingEntity, is Boat, is Interaction -> return
-        }
-
-        //raycast
-        val loc = Location(worlds[0], .0,.0,.0)
-        //rayvast
-
-        val targets = if (filter) loc.getNearbyEntitiesByType(filter.entityClass, range)
     }
 }
