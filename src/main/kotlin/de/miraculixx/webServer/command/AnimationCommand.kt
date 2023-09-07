@@ -1,6 +1,5 @@
 package de.miraculixx.webServer.command
 
-import de.miraculixx.kpaper.chat.sendMessage
 import de.miraculixx.kpaper.extensions.bukkit.addCommand
 import de.miraculixx.kpaper.runnables.task
 import de.miraculixx.webServer.CatmullRomSpline
