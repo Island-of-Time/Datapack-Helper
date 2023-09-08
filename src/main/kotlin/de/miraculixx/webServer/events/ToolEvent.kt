@@ -150,16 +150,49 @@ object ToolEvent {
             Material.ARROW -> {
                 if (!player.hasPermission("buildertools.tag-tool")) return@listen
 
+                it.isCancelled = true
                 val pdc = meta.persistentDataContainer
-                val tags = pdc.get(key, PersistentDataType.STRING)?.split(' ') ?: return@listen
+                val tags = pdc.get(key, PersistentDataType.STRING)?.split(' ')?.toSet() ?: return@listen
                 val filter = pdc.get(key2, PersistentDataType.STRING)?.let { t -> enumOf<EntityType>(t)  }
                 val range = pdc.get(key3, PersistentDataType.DOUBLE) ?: 0.5
 
                 val start = player.location.add(0.0, 1.5, 0.0)
+                var found = false
+                val isSneaking = player.isSneaking
+                val isLeft = it.action.isLeftClick
                 raycast(start, start.yaw, start.pitch, 6) { loc ->
                     val targets = if (filter != null) loc.getNearbyEntitiesByType(filter.entityClass, range)
                         else loc.getNearbyEntities(range, range, range)
-                    targets
+                    if (targets.isEmpty()) return@raycast
+                    found = true
+                    when {
+                        isLeft -> {
+                            targets.forEach { e ->
+                                e.scoreboardTags.removeAll(tags)
+                                player.sendMessage(
+                                    prefix + (cmp("Removed tags from ") + e.name().color(cHighlight) + cmp(" (Hover for info)"))
+                                        .addHover(cmp("Removed Tags:\n - $tags\n\nRemaining Tags:\n - ${e.scoreboardTags}"))
+                                )
+                            }
+                        }
+                        isSneaking -> {
+                            targets.forEach { e ->
+                                val contains = e.scoreboardTags.containsAll(tags)
+                                player.sendMessage(
+                                    prefix + (cmp("Entity ") + e.name().color(cHighlight) +
+                                    if (contains) cmp("has", cSuccess) else cmp("has not", cError) + cmp(" all tags (Hover for info)"))
+                                        .addHover(cmp("All entity tags:\n - ${e.scoreboardTags}"))
+                                )
+                            }
+                        }
+                        else -> {
+                            targets.forEach { e ->
+                                val before = e.scoreboardTags.toString()
+                                val missing = tags.toMutableSet().apply { removeAll(e.scoreboardTags) }
+                                if (missing.isEmpty()) player.sendMessage(prefix + cmp("Entity ") + e.name().color(cHighlight))
+                            }
+                        }
+                    }
                 }
 
             }
