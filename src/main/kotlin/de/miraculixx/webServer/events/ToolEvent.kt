@@ -6,7 +6,6 @@ import de.miraculixx.kpaper.event.listen
 import de.miraculixx.kpaper.extensions.geometry.add
 import de.miraculixx.kpaper.extensions.kotlin.enumOf
 import de.miraculixx.kpaper.extensions.onlinePlayers
-import de.miraculixx.kpaper.extensions.worlds
 import de.miraculixx.kpaper.items.customModel
 import de.miraculixx.kpaper.runnables.task
 import de.miraculixx.kpaper.runnables.taskRunLater
@@ -160,38 +159,16 @@ object ToolEvent {
                 var found = false
                 val isSneaking = player.isSneaking
                 val isLeft = it.action.isLeftClick
-                raycast(start, start.yaw, start.pitch, 6) { loc ->
-                    val targets = if (filter != null) loc.getNearbyEntitiesByType(filter.entityClass, range)
-                        else loc.getNearbyEntities(range, range, range)
+                raycast(start, start.yaw - 90, start.pitch, 6) { loc ->
+                    loc.world.spawnParticle(Particle.COMPOSTER, loc, 1, .0, .0, .0, 0.1)
+                    if (found) return@raycast
+                    val targets = (if (filter != null) loc.getNearbyEntitiesByType(filter.entityClass, range)
+                        else loc.getNearbyEntities(range, range, range)).filter { e -> e !is Player }
                     if (targets.isEmpty()) return@raycast
                     found = true
                     when {
-                        isLeft -> {
-                            targets.forEach { e ->
-                                e.scoreboardTags.removeAll(tags)
-                                player.sendMessage(
-                                    prefix + (cmp("Removed tags from ") + e.name().color(cHighlight) + cmp(" (Hover for info)"))
-                                        .addHover(cmp("Removed Tags:\n - $tags\n\nRemaining Tags:\n - ${e.scoreboardTags}"))
-                                )
-                            }
-                        }
-                        isSneaking -> {
-                            targets.forEach { e ->
-                                val contains = e.scoreboardTags.containsAll(tags)
-                                player.sendMessage(
-                                    prefix + (cmp("Entity ") + e.name().color(cHighlight) +
-                                    if (contains) cmp("has", cSuccess) else cmp("has not", cError) + cmp(" all tags (Hover for info)"))
-                                        .addHover(cmp("All entity tags:\n - ${e.scoreboardTags}"))
-                                )
-                            }
-                        }
-                        else -> {
-                            targets.forEach { e ->
-                                val before = e.scoreboardTags.toString()
-                                val missing = tags.toMutableSet().apply { removeAll(e.scoreboardTags) }
-                                if (missing.isEmpty()) player.sendMessage(prefix + cmp("Entity ") + e.name().color(cHighlight))
-                            }
-                        }
+                        isLeft -> player.tagToolLeftClick(targets, tags)
+                        else -> player.tagToolRightClick(isSneaking, targets, tags)
                     }
                 }
 
@@ -255,6 +232,15 @@ object ToolEvent {
                 interaction.scoreboardTags.add(tag)
             }
 
+            Material.ARROW -> {
+                val pdc = meta.persistentDataContainer
+                val tags = pdc.get(key, PersistentDataType.STRING)?.split(' ')?.toSet() ?: return@listen
+                val filter = pdc.get(key2, PersistentDataType.STRING)?.let { t -> enumOf<EntityType>(t)  }
+                if (filter != null && filter != entity.type) return@listen
+
+                player.tagToolRightClick(player.isSneaking, listOf(entity), tags)
+            }
+
             else -> Unit
         }
     }
@@ -263,6 +249,7 @@ object ToolEvent {
         val player = it.damager as? Player ?: return@listen
         val item = player.inventory.itemInMainHand
         val meta = item.itemMeta ?: return@listen
+        val entity = it.entity
 
         when (item.type) {
             Material.FEATHER -> {
@@ -271,6 +258,15 @@ object ToolEvent {
                 val multiSettings = multiToolData.getOrPut(player.uniqueId) { MultiToolCommand.MultiToolData() }
 
                 featherHitter(player, multiData, meta, multiSettings)
+            }
+
+            Material.ARROW -> {
+                val pdc = meta.persistentDataContainer
+                val tags = pdc.get(key, PersistentDataType.STRING)?.split(' ')?.toSet() ?: return@listen
+                val filter = pdc.get(key2, PersistentDataType.STRING)?.let { t -> enumOf<EntityType>(t)  }
+                if (filter != null && filter != entity.type) return@listen
+
+                player.tagToolLeftClick(listOf(entity), tags)
             }
 
             else -> Unit
@@ -326,6 +322,48 @@ object ToolEvent {
             }
         }
     }
+
+    private fun Player.tagToolLeftClick(targets: List<Entity>, tags: Set<String>) {
+        targets.forEach { e ->
+            e.scoreboardTags.removeAll(tags)
+            sendMessage(
+                prefix + (cmp("Removed tags from ") + e.name().color(cHighlight) + cmp(" (Hover for info)"))
+                    .addHover(cmp("Removed Tags:\n - ${tags.stringify()}\n\nRemaining Tags:\n - ${e.scoreboardTags.stringify()}"))
+            )
+        }
+    }
+
+    private fun Player.tagToolRightClick(isSneaking: Boolean, targets: List<Entity>, tags: Set<String>) {
+        if (isSneaking) {
+            targets.forEach { e ->
+                val contains = e.scoreboardTags.containsAll(tags)
+                sendMessage(
+                    prefix + (cmp("Entity ") + e.name().color(cHighlight) +
+                            (if (contains) cmp(" has", cSuccess) else cmp(" has not", cError)) + cmp(" all tags (Hover for info)"))
+                        .addHover(cmp("All entity tags:\n", cMark) + cmp(e.scoreboardTags.stringify()))
+                )
+            }
+        } else {
+            targets.forEach { e ->
+                val before = e.scoreboardTags
+                val missing = tags.toMutableSet().apply { removeAll(e.scoreboardTags) }
+                if (missing.isEmpty()) {
+                    sendMessage(
+                        prefix + (cmp("Entity ") + e.name().color(cHighlight) + cmp(" has all tags (Hover for info)"))
+                            .addHover(cmp("All entity tags:\n", cMark) + cmp(e.scoreboardTags.stringify()))
+                    )
+                    return
+                }
+                e.scoreboardTags.addAll(tags)
+                sendMessage(
+                    prefix + (cmp("Applied all tags to entity ") + e.name().color(cHighlight) + cmp(" (Hover for info)"))
+                        .addHover(cmp("Tags before:\n", cMark) + cmp(before.stringify()) + cmp("\nCurrent tags:", cMark) + cmp(e.scoreboardTags.stringify()))
+                )
+            }
+        }
+    }
+
+    private fun Collection<*>.stringify() = buildString { this@stringify.forEach { entry -> append(" - $entry\n") } }
 
     private fun featherHitter(player: Player, multiData: MutableMap<Entity, Any>, meta: ItemMeta, multiSettings: MultiToolCommand.MultiToolData) {
         if (player.isSneaking) {

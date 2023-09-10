@@ -18,14 +18,13 @@ import kotlin.jvm.optionals.getOrNull
 class TagToolCommand {
     val command = commandTree("tag-tool") {
         withPermission("buildertools.tag-tool")
-
-        entityTypeArgument("filter", true) {
-            doubleArgument("radius", 0.1, 10.0, true) {
-                greedyStringArgument("tags") {
+        textArgument("tags") {
+            entityTypeArgument("filter", true) {
+                doubleArgument("radius", 0.1, 10.0, true) {
                     playerExecutor { player, args ->
-                        val filter = args.getOptional(0).getOrNull() as? EntityType
-                        val range = args.getOptional(1).getOrNull() as? Double
-                        val fullTags = args[2] as String
+                        val filter = args.getOptional(1).getOrNull() as? EntityType
+                        val range = args.getOptional(2).getOrNull() as? Double
+                        val fullTags = args[0] as String
                         val tags = fullTags.split(' ')
                         val item = itemStack(Material.ARROW) {
                             meta {

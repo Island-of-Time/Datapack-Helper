@@ -39,6 +39,7 @@ class Main : KPaper() {
         QuestBookCommand()
         HitBoxCommand()
         NameTagCommand()
+        TagToolCommand()
     }
 
     override fun startup() {
