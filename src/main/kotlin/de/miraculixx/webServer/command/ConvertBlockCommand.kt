@@ -9,12 +9,10 @@ import de.miraculixx.kpaper.items.name
 import de.miraculixx.webServer.events.ToolEvent.key
 import de.miraculixx.webServer.events.ToolEvent.key2
 import de.miraculixx.webServer.events.ToolEvent.key3
-import de.miraculixx.webServer.utils.cError
-import de.miraculixx.webServer.utils.cmp
-import de.miraculixx.webServer.utils.plus
-import de.miraculixx.webServer.utils.prefix
+import de.miraculixx.webServer.utils.*
 import dev.jorel.commandapi.arguments.LocationType
 import dev.jorel.commandapi.kotlindsl.*
+import net.kyori.adventure.text.Component
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.enchantments.Enchantment
@@ -56,9 +54,9 @@ class ConvertBlockCommand {
                                 bd.transformation = Transformation(Vector3f(0f, 0f, 0f), Quaternionf(0f, 0f, 0f, 1f), Vector3f(scale, scale, scale), Quaternionf(0f, 0f, 0f, 1f))
                             }
 
-                            val type = pos.block.type.name
+                            val type = pos.block.type.translationKey()
                             pos.block.type = Material.AIR
-                            player.sendMessage(prefix + cmp("Converted block $type to a block display"))
+                            player.sendMessage(prefix + cmp("Converted block ") + Component.translatable(type).color(cMark) + cmp(" to a block display"))
                         }
                     }
                 }

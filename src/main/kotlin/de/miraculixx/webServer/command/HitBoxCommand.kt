@@ -7,9 +7,7 @@ import de.miraculixx.kpaper.items.itemStack
 import de.miraculixx.kpaper.items.meta
 import de.miraculixx.kpaper.items.name
 import de.miraculixx.webServer.events.ToolEvent.key
-import de.miraculixx.webServer.utils.cmp
-import de.miraculixx.webServer.utils.plus
-import de.miraculixx.webServer.utils.prefix
+import de.miraculixx.webServer.utils.*
 import dev.jorel.commandapi.arguments.LocationType
 import dev.jorel.commandapi.kotlindsl.*
 import org.bukkit.Location
@@ -19,6 +17,7 @@ import org.bukkit.entity.Entity
 import org.bukkit.entity.Interaction
 import org.bukkit.inventory.ItemFlag
 import org.bukkit.persistence.PersistentDataType
+import kotlin.jvm.optionals.getOrNull
 
 class HitBoxCommand {
     val command = commandTree("interaction") {
@@ -39,19 +38,25 @@ class HitBoxCommand {
                 }
             }
             entitySelectorArgumentManyEntities("entity") {
-                stringArgument("tag") {
+                stringArgument("tag", true) {
+                    floatArgument("additional-space", optional = true) {
                     anyExecutor { sender, args ->
                         val entities = args[0] as List<Entity>
-                        val tag = args[1] as String
+                        val tag = args.getOptional(1).getOrNull() as? String
+                        val space = args.getOptional(2).getOrNull() as? Float ?: 0.02f
                         entities.forEach { e ->
                             val interaction = e.world.spawn(e.location.subtract(.0, .01, .0), Interaction::class.java)
-                            interaction.interactionWidth = e.width.toFloat() + 0.02f
-                            interaction.interactionHeight = e.height.toFloat() + 0.02f
-                            interaction.scoreboardTags.add(tag)
+                            interaction.interactionWidth = e.width.toFloat() + space
+                            interaction.interactionHeight = e.height.toFloat() + space
+                            tag?.let { interaction.scoreboardTags.add(it) }
                         }
-                        sender.sendMessage(prefix + cmp("Interaction spawned around ${entities.size} ${if (entities.size > 1) "entities" else "entity"}"))
+                        when (entities.size) {
+                            0 -> sender.sendMessage(prefix + cmp("No entity was found!", cError))
+                            1 -> sender.sendMessage(prefix + cmp("Interaction spawned around ") + entities.first().name().color(cMark))
+                            else -> sender.sendMessage(prefix + cmp("Interaction spawned around ") + cmp("${entities.size}", cMark) + cmp(" entities"))
+                        }
                     }
-                }
+                }}
             }
         }
 
