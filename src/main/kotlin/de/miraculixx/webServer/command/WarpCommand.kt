@@ -18,7 +18,7 @@ import java.io.File
 
 class WarpCommand {
     private val positions: MutableMap<String, LiteLocation>
-    private val file = File("${Main.INSTANCE.dataFolder}/positions.json")
+    private val file = File(Main.settingsManager.settingsFolder, "positions.json")
 
     init {
         positions = if (file.exists()) {
@@ -73,7 +73,8 @@ class WarpCommand {
     }
 
     fun saveFile() {
-        file.writeText(Json.encodeToString(positions))
+        if (!file.exists()) file.parentFile.mkdirs()
+        file.writeText(json.encodeToString(positions))
     }
 }
 

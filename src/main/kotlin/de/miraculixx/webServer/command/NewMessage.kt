@@ -76,7 +76,7 @@ class NewMessage {
                     anyExecutor { sender, args ->
                         val name = args[0] as String
                         val lang = args[1] as String
-                        val file = File(datapackFile, "$lang/functions/$name.json")
+                        val file = File(datapackFile, "$lang/functions/${name.removeSuffix(".json")}.json")
                         if (!file.exists()) {
                             sender.sendMessage(prefix + cmp("The requested file does not exist!", cError))
                             return@anyExecutor
@@ -98,7 +98,7 @@ class NewMessage {
                             prev += "<br><br>${entry.prefix}${entry.text}"
                         }
                         Bukkit.reloadData()
-                        sender.sendMessage(prefix + cmp("Conversation successfully build to $name", cSuccess))
+                        sender.sendMessage(prefix + cmp("Conversation successfully build to $folderPath (${convData.content.size} messages)", cSuccess))
                     }
                 }
             }

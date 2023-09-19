@@ -6,7 +6,7 @@ import org.bukkit.Material
 import java.io.File
 
 class SettingsManager {
-    private val settingsFolder = File("plugins/MUtils/BuilderTools").apply { if (!exists()) mkdirs() }
+    val settingsFolder = File("plugins/MUtils/BuilderTools").apply { if (!exists()) mkdirs() }
     private lateinit var config: Config
 
     lateinit var texturePackFolder: String

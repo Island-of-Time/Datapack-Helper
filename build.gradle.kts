@@ -23,16 +23,15 @@ repositories {
 
 dependencies {
     paperweight.paperDevBundle("1.20.1-R0.1-SNAPSHOT")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta")
-    implementation("org.zeroturnaround:zt-zip:1.15")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
+    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta")
+    compileOnly("org.zeroturnaround:zt-zip:1.15")
 
     compileOnly("dev.jorel:commandapi-bukkit-shade:9.1.0")
     compileOnly("dev.jorel:commandapi-bukkit-kotlin:9.1.0")
 
-    implementation("commons-codec:commons-codec:1.15")
+    compileOnly("commons-codec:commons-codec:1.15")
     implementation("de.miraculixx:kpaper:1.1.0")
-    implementation("net.wesjd:anvilgui:1.7.0-SNAPSHOT")
     compileOnly("de.miraculixx:mweb:1.1.0")
 }
 

@@ -40,6 +40,7 @@ class Main : KPaper() {
         HitBoxCommand()
         NameTagCommand()
         TagToolCommand()
+        OriginToolCommand()
     }
 
     override fun startup() {
@@ -55,6 +56,7 @@ class Main : KPaper() {
         NameTagEvent()
         CommandPreprocess()
         TexturePackEvent
+        BlockPlaceEvent
     }
 
     override fun shutdown() {

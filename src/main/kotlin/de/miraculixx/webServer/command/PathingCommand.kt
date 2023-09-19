@@ -194,7 +194,7 @@ class PathingCommand {
             textArgument("name") {
                 anyExecutor { sender, args ->
                     val name = args[0] as String
-                    val file = File(dataPackFolder, "$name.json")
+                    val file = File(dataPackFolder, "${name.removeSuffix(".json")}.json")
                     if (!file.exists()) {
                         sender.sendMessage(prefix + cmp("The file $name.json does not exist!", cError))
                         return@anyExecutor

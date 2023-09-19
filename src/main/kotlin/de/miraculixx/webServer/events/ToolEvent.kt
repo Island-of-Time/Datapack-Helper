@@ -4,9 +4,12 @@ package de.miraculixx.webServer.events
 
 import de.miraculixx.kpaper.event.listen
 import de.miraculixx.kpaper.extensions.geometry.add
+import de.miraculixx.kpaper.extensions.geometry.minus
 import de.miraculixx.kpaper.extensions.kotlin.enumOf
 import de.miraculixx.kpaper.extensions.onlinePlayers
 import de.miraculixx.kpaper.items.customModel
+import de.miraculixx.kpaper.items.itemStack
+import de.miraculixx.kpaper.items.meta
 import de.miraculixx.kpaper.runnables.task
 import de.miraculixx.kpaper.runnables.taskRunLater
 import de.miraculixx.webServer.Main
@@ -31,6 +34,7 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerSwapHandItemsEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.meta.ItemMeta
+import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.util.BoundingBox
 import org.bukkit.util.Vector
@@ -43,6 +47,10 @@ object ToolEvent {
     val key = NamespacedKey(Main.INSTANCE, "webserver.command-item1")
     val key2 = NamespacedKey(Main.INSTANCE, "webserver.command-item2")
     val key3 = NamespacedKey(Main.INSTANCE, "webserver.command-item3")
+
+    private val tagOffset = NamespacedKey(Main.INSTANCE, "offset")
+    private val tagX = NamespacedKey(Main.INSTANCE, "x")
+    private val tagZ = NamespacedKey(Main.INSTANCE, "z")
 
     private val cooldown: MutableSet<Player> = mutableSetOf()
     private val onClick = listen<PlayerInteractEvent> {
@@ -171,7 +179,35 @@ object ToolEvent {
                         else -> player.tagToolRightClick(isSneaking, targets, tags)
                     }
                 }
+            }
 
+            Material.ENDER_EYE -> {
+                if (!player.hasPermission("buildertools.origin-tool")) return@listen
+
+                it.isCancelled = true
+                val block = it.clickedBlock ?: return@listen
+
+                val pdc = meta.persistentDataContainer
+                val originT = pdc.get(key)?.split(':') ?: return@listen
+                val origin = Location(block.world, originT[0].toDouble(), originT[1].toDouble(), originT[2].toDouble())
+                val offsetT = pdc.get(key2)?.split(':') ?: return@listen
+                val offset = Location(block.world, offsetT[0].toDouble(), offsetT[1].toDouble(), offsetT[2].toDouble())
+                val tag = pdc.get(key3)
+
+                val itemEntity = block.world.spawn(block.location.add(offset), Item::class.java)
+                itemEntity.isUnlimitedLifetime = true
+                itemEntity.setCanPlayerPickup(false)
+                itemEntity.isInvulnerable = true
+                itemEntity.setGravity(true)
+                itemEntity.itemStack = itemStack(Material.STICK) {
+                    meta {
+                        val blockOffset = block.location.minus(origin)
+                        val newPDC = pdc.adapterContext.newPersistentDataContainer()
+                        newPDC.set(tagX, PersistentDataType.INTEGER, blockOffset.blockX)
+                        newPDC.set(tagZ, PersistentDataType.INTEGER, blockOffset.blockZ)
+                        persistentDataContainer.set(key3, PersistentDataType.TAG_CONTAINER, newPDC)
+                    }
+                }
             }
 
             else -> Unit
