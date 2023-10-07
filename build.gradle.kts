@@ -27,8 +27,8 @@ dependencies {
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta")
     compileOnly("org.zeroturnaround:zt-zip:1.15")
 
-    compileOnly("dev.jorel:commandapi-bukkit-shade:9.1.0")
-    compileOnly("dev.jorel:commandapi-bukkit-kotlin:9.1.0")
+    compileOnly("dev.jorel:commandapi-bukkit-shade:9.2.0")
+    compileOnly("dev.jorel:commandapi-bukkit-kotlin:9.2.0")
 
     compileOnly("commons-codec:commons-codec:1.15")
     implementation("de.miraculixx:kpaper:1.1.0")
