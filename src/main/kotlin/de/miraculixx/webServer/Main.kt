@@ -41,6 +41,7 @@ class Main : KPaper() {
         NameTagCommand()
         TagToolCommand()
         OriginToolCommand()
+        BlockUpdateCommand()
     }
 
     override fun startup() {

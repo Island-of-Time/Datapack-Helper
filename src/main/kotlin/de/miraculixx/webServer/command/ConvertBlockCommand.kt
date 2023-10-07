@@ -32,7 +32,7 @@ class ConvertBlockCommand {
         locationArgument("pos", LocationType.BLOCK_POSITION) {
             stringArgument("tag") {
                 floatArgument("scale") {
-                    locationArgument("origin", LocationType.BLOCK_POSITION, true) {
+                    locationArgument("origin", LocationType.BLOCK_POSITION, optional = true) {
                         playerExecutor { player, args ->
                             val pos = args[0] as Location
                             val tag = args[1] as String
@@ -69,7 +69,7 @@ class ConvertBlockCommand {
 
         floatArgument("scale") {
             stringArgument("tag") {
-                locationArgument("origin", LocationType.BLOCK_POSITION, true) {
+                locationArgument("origin", LocationType.BLOCK_POSITION, optional = true) {
                     withUsage("Summons the block display at the origin and offset it to clicked location")
                     playerExecutor { player, args ->
                         val origin = args.getOptional(2).getOrNull() as? Location
