@@ -1,8 +1,10 @@
 package de.miraculixx.webServer.command
 
+import de.miraculixx.kpaper.extensions.bukkit.addCommand
 import de.miraculixx.kpaper.extensions.bukkit.plus
 import de.miraculixx.webServer.utils.addHover
 import de.miraculixx.webServer.utils.cmp
+import de.miraculixx.webServer.utils.prefix
 import dev.jorel.commandapi.kotlindsl.anyExecutor
 import dev.jorel.commandapi.kotlindsl.commandTree
 import dev.jorel.commandapi.kotlindsl.integerArgument
@@ -12,27 +14,29 @@ import net.kyori.adventure.text.format.Style
 import net.kyori.adventure.text.format.TextColor
 import net.kyori.adventure.text.format.TextDecoration
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer
+import org.bukkit.Bukkit
 import java.io.File
 
 class QuestBookCommand {
-    val datapackFile = File("world/datapacks/iot-general/data/logic/functions/todo-book")
+    val datapackFile = File("world/datapacks/iot-general/data/logic/functions/quest-book")
     val gson = GsonComponentSerializer.gson()
+    private val darkGray = TextColor.fromHexString("#4F4F4F")!!
 
     val command = commandTree("quest-book") {
         integerArgument("chapter") {
             integerArgument("quests") {
-                anyExecutor { _, args ->
+                anyExecutor { sender, args ->
                     val chapter = args[0] as Int
                     val quests = args[1] as Int
                     val folder = File(datapackFile, "chapter$chapter")
                     if (!folder.exists()) folder.mkdirs()
 
-
                     repeat(quests) {
                         val file = File(folder, "${it + 1}.mcfunction")
                         val content = buildString {
-                            append("{display:{Name:'{\"translate\":\"custom.inv.quest-book\"}'},title:'',author:'',generation:3,pages:[")
-                            append("'${getPageContent((it - 5).coerceAtLeast(0), it, chapter)}'")
+                            append("{display:{Name:'{\"translate\":\"custom.inv.quest-book\",\"italic\":false}'},title:'',author:'',generation:3,pages:[")
+                            append("'${getPageContent((it - 5).coerceAtLeast(0), it, chapter)}',")
+                            append("'${getClueContent()}'")
                             append("]} 1")
                         }.replace("\\n", "\\\\n")
                         file.writeText(
@@ -43,6 +47,9 @@ class QuestBookCommand {
                                     "item replace entity @a hotbar.8 with minecraft:written_book$content\n"
                         )
                     }
+
+                    Bukkit.reloadData()
+                    sender.sendMessage(prefix + cmp("Finished quest book setup!"))
                 }
             }
         }
@@ -51,12 +58,22 @@ class QuestBookCommand {
     private fun getPageContent(from: Int, to: Int, chapter: Int): String {
         val finished = Style.style(NamedTextColor.BLACK, TextDecoration.STRIKETHROUGH)
         val current = Style.style(NamedTextColor.BLACK)
-        var finalComponent = cmp("      ", strikethrough = true) + cmp(" Quest Book ", TextColor.fromHexString("#F0F028")!!) + cmp("      ", strikethrough = true)
+        var finalComponent = cmp("\uE040\n", NamedTextColor.WHITE)
         (from..to).forEach { state ->
             val char = if (state == to) '☐' else '☒'
-            finalComponent += (cmp("\n\n$char ", TextColor.fromHexString("#4F4F4F")!!) + Component.translatable("custom.quest.$chapter.$state.n", if (state == to) current else finished))
+            finalComponent += (cmp("\n\n$char ", darkGray) + Component.translatable("custom.quest.$chapter.$state.n", if (state == to) current else finished))
                 .addHover(Component.translatable("custom.quest.$chapter.$state.l", Style.style(NamedTextColor.WHITE)))
         }
         return gson.serialize(finalComponent)
+    }
+
+    private fun getClueContent(): String {
+        return gson.serialize(
+            (cmp("\n\n    ") + Component.translatable("custom.quest.clue") + cmp("\n\n\n")).color(NamedTextColor.WHITE) +
+                    (cmp("   \uE042 ", darkGray) + Component.translatable("custom.quest.clue.current.n", NamedTextColor.BLACK))
+                        .addHover(Component.translatable("custom.quest.clue.current.l")).addCommand("/trigger rehint") +
+                    (cmp("\n   + ", darkGray) + Component.translatable("custom.quest.clue.next.n", NamedTextColor.BLACK))
+                        .addHover(Component.translatable("custom.quest.clue.next.l")).addCommand("/trigger hint")
+        )
     }
 }
