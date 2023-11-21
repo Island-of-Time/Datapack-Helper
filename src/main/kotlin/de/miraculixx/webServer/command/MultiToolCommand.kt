@@ -6,6 +6,8 @@ import de.miraculixx.kpaper.items.customModel
 import de.miraculixx.kpaper.items.itemStack
 import de.miraculixx.kpaper.items.meta
 import de.miraculixx.kpaper.items.name
+import de.miraculixx.kpaper.localization.msg
+import de.miraculixx.kpaper.localization.msgString
 import de.miraculixx.webServer.events.ToolEvent.key
 import de.miraculixx.webServer.events.ToolEvent.key2
 import de.miraculixx.webServer.events.ToolEvent.key3
@@ -38,7 +40,21 @@ class MultiToolCommand {
                             val vector = args.getOptional(2).getOrNull() as Float? ?: 0.1f
                             val item = itemStack(Material.FEATHER) {
                                 meta {
-                                    name = cmp("Multi Tool - $entity $radius $vector", cError)
+                                    name = cmp("MultiTool - $entity $radius $vector", cError)
+                                    lore(listOf(
+                                        emptyComponent(),
+                                        msgClickLeft + cmp(msgString("tool.multi.left")),
+                                        msgShiftClickLeft + cmp(msgString("tool.multi.leftSneak")),
+                                        emptyComponent(),
+                                        cmp(msgString("tool.multi.infoMode")),
+                                        cmp("• " + msgString("tool.multi.infoMove"), cHighlight, underlined = true),
+                                        cmp("  " + msgString("tool.multi.moveRight")),
+                                        cmp("  " + msgString("tool.multi.moveRightSneak")),
+                                        emptyComponent(),
+                                        cmp("• " + msgString("tool.multi.infoRotate"), cHighlight, underlined = true),
+                                        cmp("  " + msgString("tool.multi.rotateRight")),
+                                        cmp("  " + msgString("tool.multi.rotateRightSneak")),
+                                    ))
                                     persistentDataContainer.set(key, PersistentDataType.STRING, entity.name)
                                     persistentDataContainer.set(key2, PersistentDataType.FLOAT, radius)
                                     persistentDataContainer.set(key3, PersistentDataType.FLOAT, vector)
@@ -46,6 +62,7 @@ class MultiToolCommand {
                                 }
                             }
                             sender.inventory.addItem(item)
+                            sender.sendMessage(prefix + msg("command.multi.tool"))
                         }
                     }
                 }
@@ -56,13 +73,13 @@ class MultiToolCommand {
             literalArgument("rotate") {
                 playerExecutor { player, _ ->
                     multiToolData.getOrPut(player.uniqueId) { MultiToolData() }.mode = MultiToolMode.ROTATE
-                    player.sendMessage(prefix + cmp("Multi tool mode changed to ") + cmp("rotate", cMark))
+                    player.sendMessage(prefix + msg("command.multi.modeRotate"))
                 }
             }
             literalArgument("move") {
                 playerExecutor { player, _ ->
                     multiToolData.getOrPut(player.uniqueId) { MultiToolData() }.mode = MultiToolMode.MOVE
-                    player.sendMessage(prefix + cmp("Multi tool mode changed to ") + cmp("move", cMark))
+                    player.sendMessage(prefix + msg("command.multi.modeMove"))
                 }
             }
         }
@@ -72,7 +89,7 @@ class MultiToolCommand {
                 playerExecutor { player, args ->
                     val vector = (args[0] as Location).toVector()
                     multiToolSelection[player.uniqueId]?.forEach { (e, _) -> e.teleportAsync(e.location.add(vector)) }
-                    player.sendMessage(prefix + cmp("Selection moved by ") + cmp(vector.toString(), cMark))
+                    player.sendMessage(prefix + msg("command.multi.moved", listOf(vector.toString())))
                 }
             }
         }
@@ -87,7 +104,7 @@ class MultiToolCommand {
                             pitch += rotation.normalizedPitch
                         })
                     }
-                    player.sendMessage(prefix + cmp("Selection rotated by ") + cmp(rotation.toString(), cMark) + cmp(" (clockwise)"))
+                    player.sendMessage(prefix + msg("command.multi.rotated", listOf(rotation.toString())))
                 }
             }
         }
@@ -97,7 +114,7 @@ class MultiToolCommand {
                 playerExecutor { player, args ->
                     val range = args[0] as Int
                     multiToolData.getOrPut(player.uniqueId) { MultiToolData() }.range = range
-                    player.sendMessage(prefix + cmp("Changed personal range to ") + cmp(range.toString(), cMark))
+                    player.sendMessage(prefix + msg("command.multi.rangeChange", listOf(range.toString())))
                 }
             }
         }
@@ -116,7 +133,7 @@ class MultiToolCommand {
                     entities.forEach { (e, _) ->
                         console.dispatchCommand("execute as ${e.uniqueId} at @s run $finalCommand")
                     }
-                    player.sendMessage(prefix + cmp("Command executed as ${entities.size} entities"))
+                    player.sendMessage(prefix + msg("command.multi.executed", listOf(entities.size.toString())))
                 }
             }
         }

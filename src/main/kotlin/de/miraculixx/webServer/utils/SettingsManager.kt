@@ -2,12 +2,16 @@ package de.miraculixx.webServer.utils
 
 import de.miraculixx.kpaper.extensions.kotlin.enumOf
 import de.miraculixx.kpaper.localization.Config
+import de.miraculixx.webServer.command.AnimationCommand
 import org.bukkit.Material
 import java.io.File
 
-class SettingsManager {
+object SettingsManager {
     val settingsFolder = File("plugins/MUtils/BuilderTools").apply { if (!exists()) mkdirs() }
     private lateinit var config: Config
+    private val reloadable = listOf(
+        AnimationCommand
+    )
 
     lateinit var texturePackFolder: String
         private set
@@ -50,6 +54,18 @@ class SettingsManager {
         pathingFolder = config.getString("datapack-names.pathing")
         highlightPinkGlass = config.getBoolean("show-pink-glass")
 
+        reloadable.forEach { rl -> rl.reload() }
+    }
+
+    fun saveReadFile(file: File, fallbackPath: String): String {
+        return if (!file.exists()) {
+            file.parentFile.mkdirs()
+            val source = javaClass::class.java.getResourceAsStream("/$fallbackPath") ?: return ""
+            val bytes = source.readBytes()
+            source.close()
+            file.writeBytes(bytes)
+            bytes.decodeToString()
+        } else file.readText()
     }
 
     init {

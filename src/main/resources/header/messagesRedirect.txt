@@ -1,0 +1,7 @@
+#---------> Animation Generator by Miraculixx <---------#
+#                  Powered by MapTools                  #
+#              https://mutils.net/maptools              #
+#-------------------------------------------------------#
+
+# Language Redirection
+# - Target: ../../<lang>/functions/<name>

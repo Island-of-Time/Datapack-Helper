@@ -4,7 +4,7 @@ plugins {
     kotlin("jvm") version "1.8.0"
     kotlin("plugin.serialization") version "1.8.10"
     id("io.papermc.paperweight.userdev") version "1.5.0"
-    id("xyz.jpenilla.run-paper") version "1.1.0"
+    id("xyz.jpenilla.run-paper") version "2.2.0"
     id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 

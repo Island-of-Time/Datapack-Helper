@@ -36,3 +36,7 @@ fun Audience.soundUp() {
 fun Audience.soundDown() {
     playSound(Sound.sound(Key.key("block.note_block.chime"), Sound.Source.MASTER, 1f, 0.5f))
 }
+
+fun Audience.soundPling() {
+    playSound(Sound.sound(Key.key("block.note_block.chime"), Sound.Source.MASTER, 1f, 0.5f))
+}

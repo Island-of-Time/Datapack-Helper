@@ -1,0 +1,123 @@
+#----------------------- Translation ------------------------#
+#          Content of all messages in MapHelper.             #
+#------------------------------------------------------------#
+# Some messages support MiniMessage styling (marked with #m) #
+#          and extra variables (marked with #v).             #
+# Syntax: <input-i> ->                                       #
+#         i is a number from 0 to the message max            #
+#------------------------------------------------------------#
+
+creator: MUtils
+version: 1.0.0
+
+#-----------------------------------------#
+#           Common Translations           #
+# Translation keys that persist in a lot  #
+#        messages and combinations        #
+#-----------------------------------------#
+common:
+  left: "Left"
+  right: "Right"
+  click: "Click"
+  sneak: "Sneak"
+  none: "None"
+  button: "Button"
+  copy: "copy"
+  copyLore: "Click to copy"
+  fileNotFound: "The requested file does not exist!"
+
+
+#-----------------------------------------#
+#            Command Responses            #
+#   Every command supports MiniMessages   #
+#-----------------------------------------#
+command:
+  blockUpdates:
+    off: "Block updates are <red>disabled</red> now"
+    on: "Block updates are <green>enabled</green> now"
+  animation:
+    new: "New animation creator started! Add new points with /animation add"
+    addPoint: "New position added! Finish your animation with /animation finish"
+    removeFailed: "<red>No points left to remove!"
+    remove: "Removed last control point (<input-1>)"
+    render: "Start rendering animation..."
+    renderFinish: "<green>Finished animation rendering! You can save it with /animation print"
+    finish: "New animation created! Click here to play it"
+    notStarted: "<red>You don't have any animation creator! Create one via /animation new"
+  commandTool:
+    failApply: "<red>Put an item in your main hand to apply a command to it"
+    failGet: "<red>Take a command tool in your main hand to get more information"
+    failRemove: "<red>Take a command tool in your main hand to remove all commands"
+    added: "Added entered <hover:show_text:'<input-1>'>command</hover> to your main hand item"
+    remove: "Removed all bound commands from your main hand item"
+    get: "Currently applied commands: <blue><input-1>"
+  blockConverter:
+    convert: "Converted block <lang:<input-1>> to a block display"
+    tool: "Added blockify tool to your inventory"
+  hitbox:
+    spawnBlock: "Interaction spawned around the block"
+    spawnEntity: "Interaction spawned around <#6e94ff><input-1>"
+    spawnEntities: "Interaction spawned around <color:#6e94ff><input-1></color> entities"
+    noEntity: "<red>No entity was found!"
+    tool: "Added interaction tool to your inventory"
+    remove: "Removed targeted hitbox entity"
+  leash:
+    spawn: "Spawned and connected leash points"
+  marker:
+    tool: "Added marker tool to your inventory"
+  multi:
+    tool: "Added multi tool to your inventory"
+    modeRotate: "Multi tool mode changed to <#6e94ff>rotate"
+    modeMove: "Multi tool mode changed to <#6e94ff>move"
+    moved: "Selection moved by <#6e94ff><input-1>"
+    rotated: "Selection rotated by <color:#6e94ff><input-1></color> (clockwise)"
+    rangeChange: "Changed personal range to <#6e94ff><input-1>"
+    executed: "Command executed as <input-1> entities"
+  nametag:
+    create: "Successfully created a new nametag <#6e94ff><input-1>"
+    reloadRP: "Click here to reload the resource pack"
+  message:
+    finalMessage: "Final Message: <input-1>"
+    clickToPlay: "(Click here to play message animation)"
+    missingGlobal: "Missing global for <input-1> <color:#6e94ff><input-2></color>! Creating it..."
+    missingTranslation: "Missing <input-1> translation for <color:#6e94ff><input-2></color>"
+    validated: "<green>Validation complete!"
+    built: "<green>Conversation successfully build to <input-1> (<input-2> messages)"
+  pathing:
+    new: "New Pathing script started..."
+    newControl: "Added new control point <#6e94ff><input-1>"
+    newDelay: "Added <color:#6e94ff><input-1></color> ticks delay"
+    newCommand: "Added new command <#6e94ff><input-1>"
+    newRepeating: "Added new repeating command <color:#6e94ff><input-1></color> (<input-2>)"
+    noPoints: "<red>No points left to remove!"
+    removeLast: "Removed last action"
+    finished: "<green>Animation finished playing"
+    printed: "<input-1> was printed to function"
+    clickToPlay: "(Click here to play animation)"
+
+
+#-----------------------------------------#
+#                  Items                  #
+#   Messages only visible on GUI items    #
+# Syntax: n -> Item Name                  #
+#         l -> Item Lore                  #
+#-----------------------------------------#
+tool:
+  blockConverter:
+    click: "Convert block to display (block)"
+  hitbox:
+    right: "Spawn interaction (entity & block)"
+    left: "Remove interaction (entity -> interaction)"
+  marker:
+    right: "Spawn marker (block)"
+    left: "Remove marker (block)"
+  multi:
+    left: "Select entities - /multitool range"
+    leftSneak: "Delete selection (confirm)"
+    infoMode: "Switch action mode with /multitool mode"
+    infoMove: "Move Mode"
+    infoRotate: "Rotate Mode"
+    moveRight: "Move selection in view direction (vector)"
+    moveRightSneak: "Move with double distance (vector x2)"
+    rotateRight: "Rotate selection on x-axis (vector)"
+    rotateRightSneak: "Rotate selection on y-axis (vector)"

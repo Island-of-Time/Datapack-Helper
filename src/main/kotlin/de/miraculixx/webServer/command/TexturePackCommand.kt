@@ -1,20 +1,22 @@
 package de.miraculixx.webServer.command
 
 import de.miraculixx.webServer.events.TexturePackEvent
-import de.miraculixx.webServer.settings
+import de.miraculixx.webServer.utils.SettingsManager.groupFolders
 import dev.jorel.commandapi.arguments.ArgumentSuggestions
 import dev.jorel.commandapi.kotlindsl.commandTree
 import dev.jorel.commandapi.kotlindsl.playerExecutor
 import dev.jorel.commandapi.kotlindsl.stringArgument
+import kotlin.jvm.optionals.getOrNull
 
 class TexturePackCommand {
     val command = commandTree("texturepack") {
-        stringArgument("group") {
-            replaceSuggestions(ArgumentSuggestions.stringCollection { settings.groupFolders })
+        withAliases("resourcepack")
+        stringArgument("group", optional = true) {
+            replaceSuggestions(ArgumentSuggestions.stringCollection { groupFolders })
             playerExecutor { player, args ->
-                println(settings.groupFolders.toString())
-                val group = args[0] as String
-                TexturePackEvent.loadTP(group, player, settings.groupFolders)
+                println(groupFolders.toString())
+                val group = args.getOptional(0).getOrNull() as? String ?: groupFolders.firstOrNull() ?: "unknown"
+                TexturePackEvent.loadTP(group, player, groupFolders)
             }
         }
     }

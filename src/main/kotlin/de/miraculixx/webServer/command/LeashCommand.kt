@@ -2,6 +2,9 @@
 
 package de.miraculixx.webServer.command
 
+import de.miraculixx.kpaper.localization.msg
+import de.miraculixx.webServer.utils.plus
+import de.miraculixx.webServer.utils.prefix
 import dev.jorel.commandapi.arguments.LocationType
 import dev.jorel.commandapi.kotlindsl.commandTree
 import dev.jorel.commandapi.kotlindsl.locationArgument
@@ -46,6 +49,7 @@ class LeashCommand {
                         pos2.world.spawnEntity(pos2, EntityType.LEASH_HITCH) as LeashHitch
                     } else targetEntities.first()
                     parrot.setLeashHolder(target)
+                    player.sendMessage(prefix + msg("command.leash.spawn"))
                 }
             }
         }

@@ -3,6 +3,8 @@
 package de.miraculixx.webServer.events
 
 import de.miraculixx.kpaper.event.listen
+import de.miraculixx.kpaper.extensions.bukkit.dispatchCommand
+import de.miraculixx.kpaper.extensions.console
 import de.miraculixx.kpaper.extensions.geometry.add
 import de.miraculixx.kpaper.extensions.geometry.minus
 import de.miraculixx.kpaper.extensions.kotlin.enumOf
@@ -10,14 +12,19 @@ import de.miraculixx.kpaper.extensions.onlinePlayers
 import de.miraculixx.kpaper.items.customModel
 import de.miraculixx.kpaper.items.itemStack
 import de.miraculixx.kpaper.items.meta
+import de.miraculixx.kpaper.localization.msg
 import de.miraculixx.kpaper.runnables.task
 import de.miraculixx.kpaper.runnables.taskRunLater
 import de.miraculixx.webServer.Main
-import de.miraculixx.webServer.command.MultiToolCommand
-import de.miraculixx.webServer.command.multiToolData
-import de.miraculixx.webServer.command.multiToolSelection
+import de.miraculixx.webServer.command.*
 import de.miraculixx.webServer.settings
 import de.miraculixx.webServer.utils.*
+import de.miraculixx.webServer.utils.SettingsManager.highlightFence
+import de.miraculixx.webServer.utils.SettingsManager.highlightGlobal
+import de.miraculixx.webServer.utils.SettingsManager.highlightPinkGlass
+import de.miraculixx.webServer.utils.SettingsManager.highlightSlabs
+import de.miraculixx.webServer.utils.SettingsManager.highlightStairs
+import de.miraculixx.webServer.utils.SettingsManager.highlightWalls
 import de.miraculixx.webServer.utils.gui.logic.InventoryUtils.get
 import org.bukkit.*
 import org.bukkit.block.BlockFace
@@ -34,7 +41,6 @@ import org.bukkit.event.player.PlayerInteractEvent
 import org.bukkit.event.player.PlayerSwapHandItemsEvent
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.inventory.meta.ItemMeta
-import org.bukkit.persistence.PersistentDataContainer
 import org.bukkit.persistence.PersistentDataType
 import org.bukkit.util.BoundingBox
 import org.bukkit.util.Vector
@@ -47,6 +53,7 @@ object ToolEvent {
     val key = NamespacedKey(Main.INSTANCE, "webserver.command-item1")
     val key2 = NamespacedKey(Main.INSTANCE, "webserver.command-item2")
     val key3 = NamespacedKey(Main.INSTANCE, "webserver.command-item3")
+    val keyCommand = NamespacedKey(Main.INSTANCE, "webserver.command-tool")
 
     private val tagOffset = NamespacedKey(Main.INSTANCE, "offset")
     private val tagX = NamespacedKey(Main.INSTANCE, "x")
@@ -58,8 +65,19 @@ object ToolEvent {
         if (it.isAsynchronous) return@listen
         val item = it.item ?: return@listen
         val meta = item.itemMeta ?: return@listen
-        if (meta.customModel != 100) return@listen
         val player = it.player
+        val container = meta.persistentDataContainer
+
+        val commandTool = container.get(keyCommand)
+        println(commandTool)
+        if (commandTool != null) {
+            val loc = it.interactionPoint ?: player.location
+            console.dispatchCommand("execute positioned ${loc.x} ${loc.y} ${loc.z} run $commandTool")
+            player.sendActionBar(cmp("Executed tool command", cSuccess))
+            return@listen
+        }
+
+        if (meta.customModel != 100) return@listen
 
         when (item.type) {
             // Convertor Tool
@@ -67,10 +85,9 @@ object ToolEvent {
                 if (!player.hasPermission("buildertools.blockify-tool")) return@listen
                 val block = it.clickedBlock ?: return@listen
                 if (cooldown.contains(player)) return@listen
-                val dataContainer = item.itemMeta?.persistentDataContainer ?: return@listen
-                val tag = dataContainer.get(key2, PersistentDataType.STRING) ?: return@listen
-                val scale = dataContainer.get(key, PersistentDataType.FLOAT) ?: return@listen
-                val originText = dataContainer.get(key3, PersistentDataType.STRING)?.split(':')
+                val tag = container.get(key2, PersistentDataType.STRING) ?: return@listen
+                val scale = container.get(key, PersistentDataType.FLOAT) ?: return@listen
+                val originText = container.get(key3, PersistentDataType.STRING)?.split(':')
                 val originExtension = originText?.let { c -> " ${c[0]} ${c[1]} ${c[2]}" } ?: ""
                 it.isCancelled = true
                 player.performCommand("blockify ${block.x} ${block.y} ${block.z} $tag $scale$originExtension")
@@ -80,7 +97,7 @@ object ToolEvent {
             Material.SPECTRAL_ARROW -> {
                 if (!player.hasPermission("buildertools.marker-tool")) return@listen
                 val block = it.clickedBlock ?: return@listen
-                val tag = meta.persistentDataContainer.get(key, PersistentDataType.STRING)
+                val tag = container.get(key, PersistentDataType.STRING)
                 it.isCancelled = true
                 if (it.action == Action.RIGHT_CLICK_BLOCK) {
                     val marker = block.world.spawn(block.location.subtract(-.5, -.5, -.5), Marker::class.java)
@@ -117,13 +134,13 @@ object ToolEvent {
                                 yaw in -135f..-45.1f -> BlockFace.EAST
                                 else -> BlockFace.SELF
                             }
-                            val moveVector = meta.persistentDataContainer.get(key3, PersistentDataType.FLOAT) ?: 0.1f
+                            val moveVector = container.get(key3, PersistentDataType.FLOAT) ?: 0.1f
                             val vector = facing.direction.multiply(if (player.isSneaking) moveVector * 2f else moveVector)
                             multiData.forEach { (e, _) -> e.teleportAsync(e.location.add(vector)) }
                         }
 
                         MultiToolCommand.MultiToolMode.ROTATE -> {
-                            val moveVector = (meta.persistentDataContainer.get(key3, PersistentDataType.FLOAT)?.times(10f)) ?: 1f
+                            val moveVector = (container.get(key3, PersistentDataType.FLOAT)?.times(10f)) ?: 1f
                             multiData.forEach { (e, _) ->
                                 e.teleportAsync(e.location.apply {
                                     if (player.isSneaking) pitch = rotateLocking(pitch, moveVector)
@@ -142,7 +159,7 @@ object ToolEvent {
             Material.SHULKER_SHELL -> {
                 if (!player.hasPermission("buildertools.interaction-tool")) return@listen
                 val block = it.clickedBlock ?: return@listen
-                val tag = meta.persistentDataContainer.get(key)
+                val tag = container.get(key)
                 it.isCancelled = true
                 if (it.action.isRightClick) {
                     val hitbox = block.world.spawn(block.location.subtract(-.5, .005, -.5), Interaction::class.java)
@@ -158,10 +175,9 @@ object ToolEvent {
                 if (!player.hasPermission("buildertools.tag-tool")) return@listen
 
                 it.isCancelled = true
-                val pdc = meta.persistentDataContainer
-                val tags = pdc.get(key, PersistentDataType.STRING)?.split(' ')?.toSet() ?: return@listen
-                val filter = pdc.get(key2, PersistentDataType.STRING)?.let { t -> enumOf<EntityType>(t)  }
-                val range = pdc.get(key3, PersistentDataType.DOUBLE) ?: 0.5
+                val tags = container.get(key, PersistentDataType.STRING)?.split(' ')?.toSet() ?: return@listen
+                val filter = container.get(key2, PersistentDataType.STRING)?.let { t -> enumOf<EntityType>(t) }
+                val range = container.get(key3, PersistentDataType.DOUBLE) ?: 0.5
 
                 val start = player.location.add(0.0, 1.5, 0.0)
                 var found = false
@@ -171,7 +187,7 @@ object ToolEvent {
                     loc.world.spawnParticle(Particle.COMPOSTER, loc, 1, .0, .0, .0, 0.1)
                     if (found) return@raycast
                     val targets = (if (filter != null) loc.getNearbyEntitiesByType(filter.entityClass, range)
-                        else loc.getNearbyEntities(range, range, range)).filter { e -> e !is Player }
+                    else loc.getNearbyEntities(range, range, range)).filter { e -> e !is Player }
                     if (targets.isEmpty()) return@raycast
                     found = true
                     when {
@@ -187,12 +203,11 @@ object ToolEvent {
                 it.isCancelled = true
                 val block = it.clickedBlock ?: return@listen
 
-                val pdc = meta.persistentDataContainer
-                val originT = pdc.get(key)?.split(':') ?: return@listen
+                val originT = container.get(key)?.split(':') ?: return@listen
                 val origin = Location(block.world, originT[0].toDouble(), originT[1].toDouble(), originT[2].toDouble())
-                val offsetT = pdc.get(key2)?.split(':') ?: return@listen
+                val offsetT = container.get(key2)?.split(':') ?: return@listen
                 val offset = Location(block.world, offsetT[0].toDouble(), offsetT[1].toDouble(), offsetT[2].toDouble())
-                val tag = pdc.get(key3)
+                val tag = container.get(key3)
 
                 val itemEntity = block.world.spawn(block.location.add(offset), Item::class.java)
                 itemEntity.isUnlimitedLifetime = true
@@ -202,7 +217,7 @@ object ToolEvent {
                 itemEntity.itemStack = itemStack(Material.STICK) {
                     meta {
                         val blockOffset = block.location.minus(origin)
-                        val newPDC = pdc.adapterContext.newPersistentDataContainer()
+                        val newPDC = container.adapterContext.newPersistentDataContainer()
                         newPDC.set(tagX, PersistentDataType.INTEGER, blockOffset.blockX)
                         newPDC.set(tagZ, PersistentDataType.INTEGER, blockOffset.blockZ)
                         persistentDataContainer.set(key3, PersistentDataType.TAG_CONTAINER, newPDC)
@@ -266,12 +281,13 @@ object ToolEvent {
                 interaction.interactionWidth = entity.width.toFloat() + 0.02f
                 interaction.interactionHeight = entity.height.toFloat() + 0.02f
                 interaction.scoreboardTags.add(tag)
+                player.soundPling()
             }
 
             Material.ARROW -> {
                 val pdc = meta.persistentDataContainer
                 val tags = pdc.get(key, PersistentDataType.STRING)?.split(' ')?.toSet() ?: return@listen
-                val filter = pdc.get(key2, PersistentDataType.STRING)?.let { t -> enumOf<EntityType>(t)  }
+                val filter = pdc.get(key2, PersistentDataType.STRING)?.let { t -> enumOf<EntityType>(t) }
                 if (filter != null && filter != entity.type) return@listen
 
                 player.tagToolRightClick(player.isSneaking, listOf(entity), tags)
@@ -299,10 +315,17 @@ object ToolEvent {
             Material.ARROW -> {
                 val pdc = meta.persistentDataContainer
                 val tags = pdc.get(key, PersistentDataType.STRING)?.split(' ')?.toSet() ?: return@listen
-                val filter = pdc.get(key2, PersistentDataType.STRING)?.let { t -> enumOf<EntityType>(t)  }
+                val filter = pdc.get(key2, PersistentDataType.STRING)?.let { t -> enumOf<EntityType>(t) }
                 if (filter != null && filter != entity.type) return@listen
 
                 player.tagToolLeftClick(listOf(entity), tags)
+            }
+
+            Material.SHULKER_SHELL -> {
+                if (!player.hasPermission("buildertools.interaction-tool")) return@listen
+                if (entity.type != EntityType.INTERACTION) return@listen
+                entity.remove()
+                player.sendMessage(prefix + msg("command.hitbox.remove"))
             }
 
             else -> Unit
@@ -327,7 +350,7 @@ object ToolEvent {
                 }
 
                 Material.PINK_STAINED_GLASS_PANE -> {
-                    if (!settings.highlightPinkGlass) return@forEach
+                    if (!highlightPinkGlass) return@forEach
 
                     val source = p.location
                     val display = Bukkit.createBlockData(Material.GLASS_PANE)
@@ -440,7 +463,7 @@ object ToolEvent {
                         val highlightData = when {
                             Tag.STAIRS.isTagged(material) -> {
                                 val sData = bd.block as Stairs
-                                (Bukkit.createBlockData(settings.highlightStairs) as Stairs).apply {
+                                (Bukkit.createBlockData(highlightStairs) as Stairs).apply {
                                     facing = sData.facing
                                     shape = sData.shape
                                     half = sData.half
@@ -450,7 +473,7 @@ object ToolEvent {
 
                             Tag.WALLS.isTagged(material) -> {
                                 val sData = bd.block as Wall
-                                (Bukkit.createBlockData(settings.highlightWalls) as Wall).apply {
+                                (Bukkit.createBlockData(highlightWalls) as Wall).apply {
                                     isUp = sData.isUp
                                     listOf(BlockFace.NORTH, BlockFace.EAST, BlockFace.WEST, BlockFace.SOUTH).forEach { face ->
                                         setHeight(face, sData.getHeight(face))
@@ -461,7 +484,7 @@ object ToolEvent {
 
                             Tag.FENCES.isTagged(material) -> {
                                 val sData = bd.block as Fence
-                                (Bukkit.createBlockData(settings.highlightFence) as Fence).apply {
+                                (Bukkit.createBlockData(highlightFence) as Fence).apply {
                                     listOf(BlockFace.NORTH, BlockFace.EAST, BlockFace.WEST, BlockFace.SOUTH).forEach { face ->
                                         setFace(face, sData.hasFace(face))
                                     }
@@ -471,13 +494,13 @@ object ToolEvent {
 
                             Tag.SLABS.isTagged(material) -> {
                                 val sData = bd.block as Slab
-                                (Bukkit.createBlockData(settings.highlightSlabs) as Slab).apply {
+                                (Bukkit.createBlockData(highlightSlabs) as Slab).apply {
                                     setType(sData.type)
                                     isWaterlogged = sData.isWaterlogged
                                 }
                             }
 
-                            else -> Bukkit.createBlockData(settings.highlightGlobal)
+                            else -> Bukkit.createBlockData(highlightGlobal)
                         }
                         bd.block = highlightData
                     }

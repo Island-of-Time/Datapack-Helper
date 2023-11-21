@@ -13,7 +13,6 @@ import dev.jorel.commandapi.CommandAPIBukkitConfig
 class Main : KPaper() {
     companion object {
         lateinit var INSTANCE: KPaper
-        lateinit var settingsManager: SettingsManager
         lateinit var mWebAPI: MWebAPI
         var mWebLoaded = false
     }
@@ -23,15 +22,16 @@ class Main : KPaper() {
     override fun load() {
         INSTANCE = this
         consoleSender = server.consoleSender
-        settingsManager = SettingsManager()
+        SettingsManager
 
         CommandAPI.onLoad(CommandAPIBukkitConfig(this).silentLogs(true))
         warpCommand = WarpCommand()
+        CommandToolCommand()
         LeashCommand()
         ConvertBlockCommand()
         NewMessage()
         TexturePackCommand()
-        AnimationCommand()
+        AnimationCommand
         PathingCommand()
         ReloadDataPackCommand()
         MarkerCommand()
@@ -65,5 +65,3 @@ class Main : KPaper() {
         CommandAPI.onDisable()
     }
 }
-
-val settings by lazy { Main.settingsManager }

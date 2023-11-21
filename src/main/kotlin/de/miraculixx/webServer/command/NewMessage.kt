@@ -1,8 +1,13 @@
 package de.miraculixx.webServer.command
 
 import de.miraculixx.kpaper.extensions.console
-import de.miraculixx.webServer.settings
+import de.miraculixx.kpaper.localization.msg
+import de.miraculixx.kpaper.localization.msgString
+import de.miraculixx.webServer.interfaces.Reloadable
 import de.miraculixx.webServer.utils.*
+import de.miraculixx.webServer.utils.SettingsManager.messageFolder
+import de.miraculixx.webServer.utils.SettingsManager.messageLanguages
+import de.miraculixx.webServer.utils.SettingsManager.settingsFolder
 import dev.jorel.commandapi.arguments.ArgumentSuggestions
 import dev.jorel.commandapi.arguments.StringArgument
 import dev.jorel.commandapi.kotlindsl.*
@@ -14,11 +19,14 @@ import org.bukkit.Bukkit
 import java.io.File
 import java.util.*
 
-class NewMessage {
-    private val datapackFile
-        get() = File("world/datapacks/${settings.messageFolder}/data")
+class NewMessage : Reloadable {
+    private var datapackFile = File("world/datapacks/${messageFolder}/data")
     private val mm = MiniMessage.miniMessage()
     private val chatClearer = "{\"text\":\"\\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n\"}"
+    private val headerFile = File(settingsFolder, "header/messages.txt")
+    private var header = SettingsManager.saveReadFile(headerFile, "header/${headerFile.name}")
+    private val headerRedirectFile = File(settingsFolder, "header/messagesRedirect.txt")
+    private var headerRedirect = SettingsManager.saveReadFile(headerFile, "header/${headerRedirectFile.name}")
 
     val command = commandTree("message") {
         withPermission("buildertools.message")
@@ -26,7 +34,7 @@ class NewMessage {
         literalArgument("new") {
             textArgument("prefix") {
                 textArgument("message") {
-                    argument(StringArgument("lang").replaceSuggestions(ArgumentSuggestions.stringCollection { settings.messageLanguages })) {
+                    argument(StringArgument("lang").replaceSuggestions(ArgumentSuggestions.stringCollection { messageLanguages })) {
                         textArgument("name") {
                             textArgument("target") {
                                 anyExecutor { sender, args ->
@@ -38,9 +46,10 @@ class NewMessage {
 
                                     val functionData = FunctionInfo(lang, name, UUID.randomUUID().toString(), targets, prefix, 1)
                                     calculateMessage(message, functionData)
-                                    sender.sendMessage(cmp("Final Message: ") + mm.deserialize(message))
-                                    sender.sendMessage(cmp("(Click here to play animation)").clickEvent(ClickEvent.runCommand("/function $lang:$name")))
+
                                     Bukkit.reloadData()
+                                    sender.sendMessage(msg("command.message.finalMessage", listOf(message)))
+                                    sender.sendMessage(msg("command.message.clickToPlay").clickEvent(ClickEvent.runCommand("/function $lang:$name")))
                                 }
                             }
                         }
@@ -53,32 +62,32 @@ class NewMessage {
         literalArgument("validate") {
             anyExecutor { sender, _ ->
                 val globals = getFileNamesInFolder(File(datapackFile, "chat/functions"))
-                val languages = settings.messageLanguages
+                val languages = messageLanguages
                 languages.forEach { lang ->
                     val messages = getFileNamesInFolder(File(datapackFile, "$lang/functions"))
                     messages.toMutableSet().apply { removeAll(globals) }.forEach { name ->
-                        sender.sendMessage(prefix + cmp("Missing global for $lang ") + cmp(name, cMark) + cmp("! Creating it..."))
+                        sender.sendMessage(prefix + msg("command.message.missingGlobal", listOf(lang, name)))
                         File(datapackFile, "chat/functions/$name.mcfunction").apply { parentFile.mkdirs() }.writeGlobal(name)
                     }
 
                     globals.toMutableSet().apply { removeAll(messages) }.forEach { name ->
-                        sender.sendMessage(prefix + cmp("Missing $lang translation of ") + cmp(name, cMark))
+                        sender.sendMessage(prefix + msg("command.message.missingTranslation", listOf(name)))
                     }
                 }
-                sender.sendMessage(prefix + cmp("Validation complete!", cSuccess))
                 Bukkit.reloadData()
+                sender.sendMessage(prefix + msg("command.message.validated"))
             }
         }
 
         literalArgument("conversation") {
             textArgument("file") {
-                argument(StringArgument("lang").replaceSuggestions(ArgumentSuggestions.stringCollection { settings.messageLanguages })) {
+                argument(StringArgument("lang").replaceSuggestions(ArgumentSuggestions.stringCollection { messageLanguages })) {
                     anyExecutor { sender, args ->
                         val name = args[0] as String
                         val lang = args[1] as String
                         val file = File(datapackFile, "$lang/functions/${name.removeSuffix(".json")}.json")
                         if (!file.exists()) {
-                            sender.sendMessage(prefix + cmp("The requested file does not exist!", cError))
+                            sender.sendMessage(prefix + cmp(msgString("common.fileNotFound"), cError))
                             return@anyExecutor
                         }
                         val rawJson = file.readText()
@@ -97,8 +106,9 @@ class NewMessage {
                             calculateMessage(entry.text, functionData)
                             prev += "<br><br>${entry.prefix}${entry.text}"
                         }
+
                         Bukkit.reloadData()
-                        sender.sendMessage(prefix + cmp("Conversation successfully build to $folderPath (${convData.content.size} messages)", cSuccess))
+                        sender.sendMessage(prefix + msg("command.message.built", listOf(folderPath, convData.content.size.toString())))
                     }
                 }
             }
@@ -123,16 +133,8 @@ class NewMessage {
         val prefix = gson.serialize(mm.deserialize(data.prefix.replace("①", "").replace("⑤", "").replace("⑳", "")))
 
         val final = buildString {
-            append(
-                "# Message Animator (by Miraculixx & To_Binio)\n" +
-                        "#\n" +
-                        "# Settings Input\n" +
-                        "# - Text: $message\n" +
-                        "# - Prefix: ${data.prefix}\n" +
-                        "# - Target: ${data.target}\n"
-            )
+            append(header.replace("<message>", message).replace("<prefix>", data.prefix).replace("<target>", data.target))
 
-            //Berechnung
             val body = calcFunctionBody(prefix, message, data)
             val iterations = body.second
             append(body.first)
@@ -149,12 +151,12 @@ class NewMessage {
 
     private fun File.writeGlobal(name: String) {
         writeText(
-            "# Message Convertor (by Miraculixx & To_Binio)\n" +
-                    "#\n" +
-                    "# Language Redirection\n" +
-                    "# - Target: ../../<lang>/functions/${name}\n\n" +
-                    "execute if score language state matches 1 run function german:${name}\n" +
-                    "execute if score language state matches 2 run function english:${name}"
+            buildString {
+                append(headerRedirect.replace("<name>", name) + "\n")
+                messageLanguages.forEachIndexed { index, lang ->
+                    append("\nexecute if score language state matches ${index + 1} run function $lang:${name}")
+                }
+            }
         )
     }
 
@@ -206,6 +208,12 @@ class NewMessage {
                 functionInfo.currentTick++
             }
         } to functionInfo.currentTick
+    }
+
+    override fun reload() {
+        datapackFile = File("world/datapacks/${messageFolder}/data")
+        header = SettingsManager.saveReadFile(headerFile, "header/${headerFile.name}")
+        headerRedirect = SettingsManager.saveReadFile(headerFile, "header/${headerRedirectFile.name}")
     }
 
     @Serializable

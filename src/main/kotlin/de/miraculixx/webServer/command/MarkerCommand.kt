@@ -6,6 +6,8 @@ import de.miraculixx.kpaper.items.customModel
 import de.miraculixx.kpaper.items.itemStack
 import de.miraculixx.kpaper.items.meta
 import de.miraculixx.kpaper.items.name
+import de.miraculixx.kpaper.localization.msg
+import de.miraculixx.kpaper.localization.msgString
 import de.miraculixx.webServer.events.ToolEvent.key
 import de.miraculixx.webServer.utils.*
 import dev.jorel.commandapi.kotlindsl.commandTree
@@ -28,9 +30,9 @@ class MarkerCommand {
                         val tag = args[0] as String
                         name = cmp("Block Marker - $tag", cError)
                         lore(listOf(
-                            cmp("Mark clicked blocks with a") + cmp("marker entity.") + cmp("(e.g. to execute on their position)") +
-                            emptyComponent() + (cmp("Right Click >> ") + cmp("Spawn Marker", cHighlight)) +
-                                    (cmp("Left Click >> ") + cmp("Remove Marker", cHighlight))
+                            emptyComponent(),
+                            msgClickRight + cmp(msgString("tool.marker.right")),
+                            msgClickLeft + cmp(msgString("tool.marker.left")),
                         ))
                         persistentDataContainer.set(key, PersistentDataType.STRING, tag)
                         customModel = 100
@@ -39,7 +41,7 @@ class MarkerCommand {
                     }
                 }
                 player.inventory.addItem(item)
-                player.sendMessage(prefix + cmp("Added marker tool to your inventory"))
+                player.sendMessage(prefix + msg("command.marker.tool"))
             }
         }
     }
@@ -58,7 +60,7 @@ class MarkerCommand {
                         ))
                         persistentDataContainer.set(key, PersistentDataType.INTEGER, range)
                         customModel = 100
-                        addUnsafeEnchantment(Enchantment.MENDING, 1)
+                        addEnchant(Enchantment.MENDING, 1, true)
                         addItemFlags(ItemFlag.HIDE_ENCHANTS)
                     }
                 }

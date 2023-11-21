@@ -3,9 +3,12 @@
 package de.miraculixx.webServer.command
 
 import com.google.common.primitives.UnsignedInteger
+import de.miraculixx.kpaper.extensions.bukkit.addCommand
 import de.miraculixx.kpaper.extensions.bukkit.addCopy
-import de.miraculixx.webServer.settings
+import de.miraculixx.kpaper.localization.msg
+import de.miraculixx.kpaper.localization.msgString
 import de.miraculixx.webServer.utils.*
+import de.miraculixx.webServer.utils.SettingsManager.texturePackFolder
 import dev.jorel.commandapi.kotlindsl.anyExecutor
 import dev.jorel.commandapi.kotlindsl.commandTree
 import dev.jorel.commandapi.kotlindsl.textArgument
@@ -36,20 +39,22 @@ class NameTagCommand {
 
                                     CustomNameTag.createNewNameTag(
                                         content,
-                                        File("${settings.texturePackFolder}/global/assets/minecraft/textures/font/nametags", "$name.png"),
+                                        File("${texturePackFolder}/global/assets/minecraft/textures/font/nametags", "$name.png"),
                                         mainColor.toColor(sender) ?: return@anyExecutor,
                                         shadowColor.toColor(sender) ?: return@anyExecutor,
                                         charShadowColor.toColor(sender) ?: return@anyExecutor,
                                         charColor.toColor(sender) ?: return@anyExecutor
                                     )
-                                    val fontFile = File("${settings.texturePackFolder}/global/assets/minecraft/font/default.json")
+                                    val fontFile = File("${texturePackFolder}/global/assets/minecraft/font/default.json")
                                     val font = json.decodeFromString<FontJson>(fontFile.takeIf { it.exists() }?.readText()?.ifBlank { "{}" } ?: "{}")
                                     val escaped = "\\uE${font.providers.size.plus(1).to3Digits()}"
                                     val unescaped = unescapeUnicode(escaped)
                                     font.providers.add(FontChar("bitmap", "minecraft:font/nametags/$name.png", 8, 8, listOf(unescaped)))
                                     fontFile.writeText(json.encodeToString(font))
+
                                     sender.sendMessage(prefix + cmp("Successfully created a new nametag ") + cmp(name, cMark))
-                                    sender.sendMessage(prefix + cmp("$unescaped (copy)").addCopy(unescaped).addHover(cmp("Click to copy")))
+                                    sender.sendMessage(prefix + cmp("-> $unescaped ($msgCopy)").addCopy(unescaped).addHover(cmp(msgString("common.copyLore"))))
+                                    sender.sendMessage(prefix + msg("command.nametag.reloadRP").addCommand("/resourcepack"))
                                 }
                             }
                         }

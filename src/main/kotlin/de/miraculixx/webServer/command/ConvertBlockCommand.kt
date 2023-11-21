@@ -6,13 +6,14 @@ import de.miraculixx.kpaper.items.customModel
 import de.miraculixx.kpaper.items.itemStack
 import de.miraculixx.kpaper.items.meta
 import de.miraculixx.kpaper.items.name
+import de.miraculixx.kpaper.localization.msg
+import de.miraculixx.kpaper.localization.msgString
 import de.miraculixx.webServer.events.ToolEvent.key
 import de.miraculixx.webServer.events.ToolEvent.key2
 import de.miraculixx.webServer.events.ToolEvent.key3
 import de.miraculixx.webServer.utils.*
 import dev.jorel.commandapi.arguments.LocationType
 import dev.jorel.commandapi.kotlindsl.*
-import net.kyori.adventure.text.Component
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.enchantments.Enchantment
@@ -56,7 +57,7 @@ class ConvertBlockCommand {
 
                             val type = pos.block.type.translationKey()
                             pos.block.type = Material.AIR
-                            player.sendMessage(prefix + cmp("Converted block ") + Component.translatable(type).color(cMark) + cmp(" to a block display"))
+                            player.sendMessage(prefix + msg("command.blockConverter.convert", listOf(type)))
                         }
                     }
                 }
@@ -70,7 +71,6 @@ class ConvertBlockCommand {
         floatArgument("scale") {
             stringArgument("tag") {
                 locationArgument("origin", LocationType.BLOCK_POSITION, optional = true) {
-                    withUsage("Summons the block display at the origin and offset it to clicked location")
                     playerExecutor { player, args ->
                         val origin = args.getOptional(2).getOrNull() as? Location
                         val text = origin?.let { "${it.blockX}:${it.blockY}:${it.blockZ}" }
@@ -79,16 +79,22 @@ class ConvertBlockCommand {
                                 val scale = args[0] as Float
                                 val tag = args[1] as String
                                 name = cmp("Blockify: $scale - $tag ${text?.let { "- $it" } ?: ""}", cError)
+                                lore(
+                                    listOf(
+                                        emptyComponent(),
+                                        msgClick + cmp(msgString("tool.blockConverter.click"))
+                                    )
+                                )
                                 persistentDataContainer.set(key, PersistentDataType.FLOAT, scale)
                                 persistentDataContainer.set(key2, PersistentDataType.STRING, tag)
                                 if (text != null) persistentDataContainer.set(key3, PersistentDataType.STRING, text)
                                 customModel = 100
-                                addUnsafeEnchantment(Enchantment.MENDING, 1)
+                                addEnchant(Enchantment.MENDING, 1, true)
                                 addItemFlags(ItemFlag.HIDE_ENCHANTS)
                             }
                         }
                         player.inventory.addItem(item)
-                        player.sendMessage(prefix + cmp("Added blockify tool to your inventory"))
+                        player.sendMessage(prefix + msg("command.blockConverter.add"))
                     }
                 }
             }

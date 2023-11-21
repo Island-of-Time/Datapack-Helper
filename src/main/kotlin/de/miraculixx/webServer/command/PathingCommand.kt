@@ -1,20 +1,27 @@
-@file:Suppress("UNCHECKED_CAST", "UNCHECKED_CAST")
+@file:Suppress("UNCHECKED_CAST")
 
 package de.miraculixx.webServer.command
 
 import de.miraculixx.kpaper.extensions.bukkit.addCommand
 import de.miraculixx.kpaper.extensions.console
+import de.miraculixx.kpaper.extensions.geometry.toSimpleBlockString
 import de.miraculixx.kpaper.extensions.kotlin.round
 import de.miraculixx.kpaper.extensions.worlds
+import de.miraculixx.kpaper.localization.msg
+import de.miraculixx.kpaper.localization.msgString
 import de.miraculixx.kpaper.runnables.sync
 import de.miraculixx.kpaper.runnables.task
 import de.miraculixx.kpaper.runnables.taskRunLater
-import de.miraculixx.webServer.settings
+import de.miraculixx.webServer.interfaces.Reloadable
 import de.miraculixx.webServer.utils.*
+import de.miraculixx.webServer.utils.SettingsManager.pathingFolder
 import dev.jorel.commandapi.kotlindsl.*
 import dev.jorel.commandapi.wrappers.CommandResult
 import dev.jorel.commandapi.wrappers.Rotation
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
@@ -22,6 +29,7 @@ import net.kyori.adventure.audience.Audience
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Entity
+import org.bukkit.entity.Player
 import org.joml.Vector3d
 import java.io.File
 import java.text.DecimalFormat
@@ -31,10 +39,9 @@ import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.time.Duration.Companion.milliseconds
 
-class PathingCommand {
+class PathingCommand : Reloadable {
     private val creators: MutableMap<UUID, PathingData> = mutableMapOf()
-    private val dataPackFolder
-        get() = File("world/datapacks/${settings.pathingFolder}/data/animation/functions")
+    private var dataPackFolder = File("world/datapacks/${pathingFolder}/data/animation/functions")
     private val format = DecimalFormat("#").apply { maximumFractionDigits = 4 }
 
     val command = commandTree("pathing") {
@@ -45,7 +52,7 @@ class PathingCommand {
                 playerExecutor { player, args ->
                     val target = args[0] as List<Entity>
                     creators[player.uniqueId] = PathingData(target, args.getRaw(0)!!, mutableListOf())
-                    player.sendMessage(prefix + cmp("New Pathing script started!"))
+                    player.sendMessage(prefix + msg("command.pathing.new"))
                     target.forEach { e -> e.isGlowing = true }
                     taskRunLater(10) { target.forEach { e -> e.isGlowing = false } }
                 }
@@ -65,7 +72,7 @@ class PathingCommand {
                                 pitch = view.pitch
                             }
                             val data = creators[player.uniqueId] ?: player.noEditor() ?: return@playerExecutor
-                            player.sendMessage(prefix + cmp("Add new control point"))
+                            player.sendMessage(prefix + msg("command.pathing.newControl", listOf(location.toSimpleBlockString())))
 
                             //Play the current step
                             val targets = data.target
@@ -87,7 +94,7 @@ class PathingCommand {
                 playerExecutor { player, args ->
                     val delay = args[0] as Int
                     creators[player.uniqueId]?.actions?.add(PathingAction(PathingType.DELAY, time = delay.toDouble())) ?: player.noEditor() ?: return@playerExecutor
-                    player.sendMessage(prefix + cmp("Add $delay ticks delay"))
+                    player.sendMessage(prefix + msg("command.pathing.newDelay", listOf(delay.toString())))
                 }
             }
         }
@@ -103,7 +110,7 @@ class PathingCommand {
                         command.args.forEach { append(" $it") }
                     }
                     creators[player.uniqueId]?.actions?.add(PathingAction(PathingType.RUN_SCRIPT, script = finalCommand)) ?: player.noEditor() ?: return@playerExecutor
-                    player.sendMessage(prefix + cmp("Added new command ") + cmp(finalCommand, cMark).addCommand("/$finalCommand"))
+                    player.sendMessage(prefix + msg("command.pathing.newCommand", listOf(finalCommand)).addCommand("/$finalCommand"))
                 }
             }
         }
@@ -119,7 +126,7 @@ class PathingCommand {
                             command.args.forEach { append(" $it") }
                         }
                         creators[player.uniqueId]?.actions?.add(PathingAction(PathingType.REPEAT, script = finalCommand, time = amount.toDouble())) ?: player.noEditor() ?: return@playerExecutor
-                        player.sendMessage(prefix + cmp("Added new repeated command ") + cmp(finalCommand, cMark).addCommand("/$finalCommand") + cmp(" ($amount)"))
+                        player.sendMessage(prefix + msg("command.pathing.newRepeating", listOf(finalCommand, amount.toString())))
                     }
                 }
             }
@@ -129,10 +136,10 @@ class PathingCommand {
             playerExecutor { player, _ ->
                 val creator = creators[player.uniqueId] ?: player.noEditor() ?: return@playerExecutor
                 if (creator.actions.removeLastOrNull() == null) {
-                    player.sendMessage(prefix + cmp("No points left to remove", cError))
+                    player.sendMessage(prefix + msg("command.pathing.noPoints"))
                     return@playerExecutor
                 }
-                player.sendMessage(prefix + cmp("Removed last action"))
+                player.sendMessage(prefix + msg("command.pathing.removeLast"))
             }
         }
 
@@ -169,7 +176,7 @@ class PathingCommand {
 
                         delay((50L * delay).milliseconds)
                     }
-                    player.sendMessage(prefix + cmp("Animation finished"))
+                    player.sendMessage(prefix + msg("command.pathing.finished"))
                 }
             }
         }
@@ -185,7 +192,8 @@ class PathingCommand {
 
                     printToFunction(data.actions, data.rawTarget, file, name)
                     Bukkit.reloadData()
-                    player.sendMessage(prefix + cmp("$name was printed to function"))
+                    player.sendMessage(prefix + msg("command.pathing.printed", listOf(name)))
+                    player.sendMessage(prefix + msg("command.pathing.clickToPlay").addCommand("/function animation:$name.mcfunction"))
                 }
             }
         }
@@ -196,7 +204,7 @@ class PathingCommand {
                     val name = args[0] as String
                     val file = File(dataPackFolder, "${name.removeSuffix(".json")}.json")
                     if (!file.exists()) {
-                        sender.sendMessage(prefix + cmp("The file $name.json does not exist!", cError))
+                        sender.sendMessage(prefix + cmp(msgString("common.fileNotFound"), cError))
                         return@anyExecutor
                     }
                     val data = json.decodeFromString<PathingJsonData>(file.readText())
@@ -348,12 +356,16 @@ class PathingCommand {
         ).apply { yaw = vec.yaw })
     }
 
-    private fun Audience.noEditor(): PathingData? {
+    private fun Player.noEditor(): PathingData? {
         sendMessage(prefix + cmp("You don't have any pathing creator! Create one via /pathing new", cError))
         return null
     }
 
     private fun Number.format() = format.format(this)
+
+    override fun reload() {
+        dataPackFolder = File("world/datapacks/${pathingFolder}/data/animation/functions")
+    }
 
     @Serializable
     private data class PathingJsonData(val target: String, val actions: MutableList<PathingAction>)

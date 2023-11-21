@@ -12,10 +12,12 @@ import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.block.Block
 import org.bukkit.entity.BlockDisplay
+import org.jetbrains.annotations.ApiStatus.Experimental
 import java.io.File
 import kotlin.math.max
 import kotlin.math.min
 
+@Experimental
 class OriginToolCommand {
     private val folder = File("world/datapacks/iot-general/data/logic/functions")
 

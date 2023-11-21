@@ -14,7 +14,7 @@ block-highlight:
 # - Texturepack folder
 # Inside this folder all folders not starting with a '.' will be merged together and sent
 # to the player on request.
-# Additionally, a new folder named 'global' will be created here including all auto-generated assets.
+# Additionally, a new folder named '.global' will be created here including all auto-generated assets.
 #
 texturepack-folder: "texturepack"
 
@@ -45,7 +45,8 @@ datapack-names:
 #
 # - Message Languages
 # You can create translations with those languages if you need multiple languages.
-# This will simply multilang maps and even can check if all translations exist.
+# This will simplify multilang maps and even can check if all translations exist.
+# Ordering matters! Reordering entries also changes global function redirection!
 #
 message-languages:
   - "german"

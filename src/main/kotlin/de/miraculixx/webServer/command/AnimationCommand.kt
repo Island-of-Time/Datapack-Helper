@@ -1,27 +1,32 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package de.miraculixx.webServer.command
 
 import de.miraculixx.kpaper.extensions.bukkit.addCommand
+import de.miraculixx.kpaper.localization.msg
 import de.miraculixx.kpaper.runnables.task
 import de.miraculixx.webServer.CatmullRomSpline
-import de.miraculixx.webServer.settings
-import de.miraculixx.webServer.utils.cError
-import de.miraculixx.webServer.utils.cmp
+import de.miraculixx.webServer.interfaces.Reloadable
+import de.miraculixx.webServer.utils.SettingsManager.animationFolder
+import de.miraculixx.webServer.utils.SettingsManager.saveReadFile
+import de.miraculixx.webServer.utils.SettingsManager.settingsFolder
 import de.miraculixx.webServer.utils.plus
 import de.miraculixx.webServer.utils.prefix
 import dev.jorel.commandapi.kotlindsl.*
-import net.kyori.adventure.audience.Audience
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Entity
+import org.bukkit.entity.Player
 import org.joml.Vector3d
 import java.awt.geom.Point2D
 import java.io.File
 import java.util.*
 
-class AnimationCommand {
-    private val dataPackFolder
-        get() = File("world/datapacks/${settings.animationFolder}/data/animation/functions")
+object AnimationCommand : Reloadable {
+    private var dataPackFolder = File("world/datapacks/${animationFolder}/data/animation/functions")
     private val creators: MutableMap<UUID, CreatorData> = mutableMapOf()
+    private val headerFile = File(settingsFolder, "header/animation.txt")
+    private var header = saveReadFile(headerFile, "header/animation.txt")
 
     @Suppress("unused")
     private val mainCommand = commandTree("animation") {
@@ -30,7 +35,7 @@ class AnimationCommand {
         literalArgument("new") {
             playerExecutor { player, _ ->
                 creators[player.uniqueId] = CreatorData(mutableListOf(), mutableListOf())
-                player.sendMessage(prefix + cmp("New animation creator started! Add new points with /animation add"))
+                player.sendMessage(prefix + msg("command.animation.new"))
             }
         }
 
@@ -49,7 +54,7 @@ class AnimationCommand {
                     if (prevLoc.pitch == newLoc.pitch) newLoc.apply { pitch += 0.001f }
                 }
                 creator.points.add(newLoc)
-                player.sendMessage(prefix + cmp("New position added! Finish your animation with /animation finish"))
+                player.sendMessage(prefix + msg("command.animation.addPoint"))
             }
         }
 
@@ -57,11 +62,11 @@ class AnimationCommand {
             playerExecutor { player, _ ->
                 val creator = creators[player.uniqueId] ?: player.noEditor() ?: return@playerExecutor
                 if (creator.points.isEmpty()) {
-                    player.sendMessage(prefix + cmp("No points left to remove", cError))
+                    player.sendMessage(prefix + msg("command.animation.removeFailed"))
                     return@playerExecutor
                 }
                 creator.points.removeLastOrNull()
-                player.sendMessage(prefix + cmp("Removed last control point (${creator.points.size})"))
+                player.sendMessage(prefix + msg("command.animation.remove", listOf(creator.points.size.toString())))
             }
         }
 
@@ -91,10 +96,14 @@ class AnimationCommand {
                             }
 
                             val targets = args[2] as List<Entity>
-                            task(period = 1, howOften = pointsView.size.toLong()) {
+                            task(period = 1, howOften = pointsView.size.toLong(), endCallback = {
+                                player.sendMessage(prefix + msg("command.animation.renderFinish"))
+                            }) {
                                 val point = data.interpolation.getOrNull(it.counterUp!!.toInt()) ?: return@task
                                 targets.forEach { e -> e.teleport(point) }
                             }
+
+                            player.sendMessage(prefix + msg("command.animation.render"))
                         }
                     }
                 }
@@ -112,13 +121,7 @@ class AnimationCommand {
                         val data = creators[player.uniqueId] ?: player.noEditor() ?: return@playerExecutor
 
                         val content = buildString {
-                            append(
-                                "# Animation Generator (by Miraculixx & To_Binio)\n" +
-                                        "#\n" +
-                                        "# Settings Input\n" +
-                                        "# - Control Points: ${data.points.size}\n" +
-                                        "# - Target: $target\n"
-                            )
+                            append(header.replace("<points>", data.points.size.toString()).replace("<target>", target))
 
                             val scoreID = UUID.randomUUID()
                             var ticker = 1
@@ -145,16 +148,21 @@ class AnimationCommand {
                         file.writeText(content)
 
                         Bukkit.reloadData()
-                        player.sendMessage(prefix + cmp("New animation created! Click here to play it").addCommand("/function animation:$name"))
+                        player.sendMessage(prefix + msg("command.animation.finish").addCommand("/function animation:$name"))
                     }
                 }
             }
         }
     }
 
-    private fun Audience.noEditor(): CreatorData? {
-        sendMessage(prefix + cmp("You don't have any animation creator! Create one via /animation new", cError))
+    private fun Player.noEditor(): CreatorData? {
+        sendMessage(prefix + msg("command.animation.notStarted"))
         return null
+    }
+
+    override fun reload() {
+        header = saveReadFile(headerFile, "header/animation.txt")
+        dataPackFolder = File("world/datapacks/${animationFolder}/data/animation/functions")
     }
 
     private data class CreatorData(val points: MutableList<Location>, var interpolation: List<Location>)
