@@ -94,6 +94,9 @@ command:
     finished: "<green>Animation finished playing"
     printed: "<input-1> was printed to function"
     clickToPlay: "(Click here to play animation)"
+    reprinted: "<input-1> successfully reprinted to function"
+    loaded: "Pathing script <input-1> loaded. You can edit or play it now"
+    noEditor: "<red>You don't have any pathing creator! Start one via <u>/pathing new</u>"
 
 
 #-----------------------------------------#

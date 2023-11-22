@@ -43,6 +43,8 @@ class PathingCommand : Reloadable {
     private val creators: MutableMap<UUID, PathingData> = mutableMapOf()
     private var dataPackFolder = File("world/datapacks/${pathingFolder}/data/animation/functions")
     private val format = DecimalFormat("#").apply { maximumFractionDigits = 4 }
+    private val headerFile = File(SettingsManager.settingsFolder, "header/pathing.txt")
+    private var header = SettingsManager.saveReadFile(headerFile, "header/${headerFile.name}")
 
     val command = commandTree("pathing") {
         withPermission("buildertools.pathing")
@@ -154,7 +156,8 @@ class PathingCommand : Reloadable {
                         val delay = when (action.type) {
                             PathingType.CONTROL_POINT -> {
                                 val animationData = animateFromTo(lastPoint ?: action.location!!, action.location!!, action.time!!)
-                                Audience.empty().animateDirectly(animationData, data.target)
+                                val dummy: Player? = null
+                                dummy.animateDirectly(animationData, data.target)
                                 lastPoint = action.location
                                 animationData.first.size + 1
                             }
@@ -211,7 +214,8 @@ class PathingCommand : Reloadable {
 
                     printToFunction(data.actions, data.target, File(dataPackFolder, "$name.mcfunction"), name)
                     Bukkit.reloadData()
-                    sender.sendMessage(prefix + cmp("$name was reprinted to function"))
+                    sender.sendMessage(prefix + msg("command.pathing.reprinted", listOf(name)))
+                    sender.sendMessage(prefix + msg("command.pathing.clickToPlay").addCommand("/function animation:$name.mcfunction"))
                 }
             }
         }
@@ -220,16 +224,16 @@ class PathingCommand : Reloadable {
             textArgument("name") {
                 playerExecutor { sender, args ->
                     val name = args[0] as String
-                    val file = File(dataPackFolder, "$name.json")
+                    val file = File(dataPackFolder, "${name.removeSuffix(".json")}.json")
                     if (!file.exists()) {
-                        sender.sendMessage(prefix + cmp("The file $name.json does not exist!", cError))
+                        sender.sendMessage(prefix + cmp(msgString("common.fileNotFound"), cError))
                         return@playerExecutor
                     }
                     val data = json.decodeFromString<PathingJsonData>(file.readText())
                     val entities = Bukkit.selectEntities(sender, data.target)
 
                     creators[sender.uniqueId] = PathingData(entities, data.target, data.actions)
-                    sender.sendMessage(prefix + cmp("Pathing $name loaded!"))
+                    sender.sendMessage(prefix + msg("command.pathing.loaded", listOf(name)))
                 }
             }
         }
@@ -238,13 +242,10 @@ class PathingCommand : Reloadable {
     private fun printToFunction(data: List<PathingAction>, target: String, file: File, name: String) {
         val uuid = UUID.randomUUID()
         val content = buildString {
-            append(
-                "# Animation Generator (by Miraculixx & To_Binio)\n" +
-                        "#\n" +
-                        "# Settings Input\n" +
-                        "# - Control Points: ${data.filter { it.type == PathingType.CONTROL_POINT }.size}\n" +
-                        "# - Scripts: ${data.filter { it.type == PathingType.RUN_SCRIPT }.size}\n" +
-                        "# - Target: $target\n"
+            append(header
+                .replace("<points>", data.filter { it.type == PathingType.CONTROL_POINT }.size.toString())
+                .replace("<scripts>", data.filter { it.type == PathingType.RUN_SCRIPT }.size.toString())
+                .replace("<target>", target)
             )
 
             var counter = 1
@@ -339,11 +340,11 @@ class PathingCommand : Reloadable {
         } to to
     }
 
-    private fun Audience.animateDirectly(pair: Pair<List<Location>, Location>, target: List<Entity>) {
+    private fun Player?.animateDirectly(pair: Pair<List<Location>, Location>, target: List<Entity>) {
         pair.first.firstOrNull()?.let { sync { target.forEach { e -> e.tpRelative(it) } } }
         task(period = 1, howOften = pair.first.size.toLong(), endCallback = {
             sync { target.forEach { e -> e.teleport(pair.second) } }
-            sendMessage(prefix + cmp("Animation finished!"))
+            this?.sendMessage(prefix + msg("command.pathing.finished"))
         }) {
             val loc = pair.first.getOrNull(it.counterUp?.toInt()!!) ?: return@task
             sync { target.forEach { e -> e.tpRelative(loc) } }
@@ -365,6 +366,7 @@ class PathingCommand : Reloadable {
 
     override fun reload() {
         dataPackFolder = File("world/datapacks/${pathingFolder}/data/animation/functions")
+        header = SettingsManager.saveReadFile(headerFile, "header/${headerFile.name}")
     }
 
     @Serializable
