@@ -1,10 +1,10 @@
 import java.net.URI
 
 plugins {
-    kotlin("jvm") version "1.8.0"
-    kotlin("plugin.serialization") version "1.8.10"
-    id("io.papermc.paperweight.userdev") version "1.5.0"
-    id("xyz.jpenilla.run-paper") version "2.2.0"
+    kotlin("jvm") version "1.9.20"
+    kotlin("plugin.serialization") version "1.9.20"
+    id("io.papermc.paperweight.userdev") version "1.5.10"
+    id("xyz.jpenilla.run-paper") version "2.2.2"
     id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
@@ -22,7 +22,7 @@ repositories {
 }
 
 dependencies {
-    paperweight.paperDevBundle("1.20.1-R0.1-SNAPSHOT")
+    paperweight.paperDevBundle("1.20.2-R0.1-SNAPSHOT")
     compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta")
     compileOnly("org.zeroturnaround:zt-zip:1.15")
@@ -31,13 +31,12 @@ dependencies {
     compileOnly("dev.jorel:commandapi-bukkit-kotlin:9.2.0")
 
     compileOnly("commons-codec:commons-codec:1.15")
-    implementation("de.miraculixx:kpaper:1.1.0")
+    compileOnly("de.miraculixx:kpaper:1.1.1")
     compileOnly("de.miraculixx:mweb:1.1.0")
 }
 
 tasks {
     assemble {
-        dependsOn(shadowJar)
         dependsOn(reobfJar)
     }
     compileJava {
