@@ -16,8 +16,9 @@ import de.miraculixx.kpaper.localization.msg
 import de.miraculixx.kpaper.runnables.task
 import de.miraculixx.kpaper.runnables.taskRunLater
 import de.miraculixx.webServer.Main
-import de.miraculixx.webServer.command.*
-import de.miraculixx.webServer.settings
+import de.miraculixx.webServer.command.MultiToolCommand
+import de.miraculixx.webServer.command.multiToolData
+import de.miraculixx.webServer.command.multiToolSelection
 import de.miraculixx.webServer.utils.*
 import de.miraculixx.webServer.utils.SettingsManager.highlightFence
 import de.miraculixx.webServer.utils.SettingsManager.highlightGlobal

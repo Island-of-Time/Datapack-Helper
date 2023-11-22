@@ -17,31 +17,12 @@ class Main : KPaper() {
         var mWebLoaded = false
     }
 
-    private lateinit var warpCommand: WarpCommand
-
     override fun load() {
         INSTANCE = this
         consoleSender = server.consoleSender
-        SettingsManager
-
         CommandAPI.onLoad(CommandAPIBukkitConfig(this).silentLogs(true))
-        warpCommand = WarpCommand()
-        CommandToolCommand()
-        LeashCommand()
-        ConvertBlockCommand()
-        NewMessage()
-        TexturePackCommand()
-        AnimationCommand
-        PathingCommand()
-        ReloadDataPackCommand()
-        MarkerCommand()
-        MultiToolCommand()
-        QuestBookCommand()
-        HitBoxCommand()
-        NameTagCommand()
-        TagToolCommand()
-        OriginToolCommand()
-        BlockUpdateCommand()
+
+        SettingsManager
     }
 
     override fun startup() {
@@ -61,7 +42,7 @@ class Main : KPaper() {
     }
 
     override fun shutdown() {
-        warpCommand.saveFile()
+        SettingsManager.save()
         CommandAPI.onDisable()
     }
 }

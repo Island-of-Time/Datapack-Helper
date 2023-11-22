@@ -15,8 +15,10 @@ import net.kyori.adventure.text.format.TextColor
 import net.kyori.adventure.text.format.TextDecoration
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer
 import org.bukkit.Bukkit
+import org.jetbrains.annotations.ApiStatus.Experimental
 import java.io.File
 
+@Experimental
 class QuestBookCommand {
     val datapackFile = File("world/datapacks/iot-general/data/logic/functions/quest-book")
     val gson = GsonComponentSerializer.gson()

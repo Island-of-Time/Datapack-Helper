@@ -6,7 +6,7 @@ import java.io.File
 import javax.imageio.ImageIO
 
 object CustomNameTag {
-    private val spriteSheet = ImageIO.read(javaClass.getResourceAsStream("/pixel-sprites.png"))
+    private val spriteSheet = ImageIO.read(javaClass.getResourceAsStream("/assets/pixel-sprites.png"))
     private val charIndex = "abcdefghijklmnopqrstuvwxyz".toCharArray()
     private val specialCharIndex = "#-?!.,:;".toCharArray()
     private val white = Color(255,255,255,255).rgb

@@ -1,7 +1,11 @@
 package de.miraculixx.webServer.command
 
-import de.miraculixx.webServer.Main
+import de.miraculixx.kpaper.extensions.console
+import de.miraculixx.kpaper.localization.msg
+import de.miraculixx.webServer.interfaces.DataHolder
+import de.miraculixx.webServer.interfaces.Reloadable
 import de.miraculixx.webServer.utils.*
+import de.miraculixx.webServer.utils.SettingsManager.settingsFolder
 import dev.jorel.commandapi.IStringTooltip
 import dev.jorel.commandapi.StringTooltip
 import dev.jorel.commandapi.arguments.ArgumentSuggestions
@@ -16,9 +20,9 @@ import org.bukkit.Location
 import org.bukkit.Sound
 import java.io.File
 
-class WarpCommand {
+class WarpCommand : Reloadable, DataHolder {
     private val positions: MutableMap<String, LiteLocation>
-    private val file = File(Main.settingsManager.settingsFolder, "positions.json")
+    private val file = File(settingsFolder, "positions.json")
 
     init {
         positions = if (file.exists()) {
@@ -28,53 +32,82 @@ class WarpCommand {
 
     @Suppress("unused")
     val command = commandTree("position") {
+        withPermission("mutils.position")
+
         withAliases("pos", "location", "loc")
         literalArgument("tp") {
             argument(StringArgument("name").replaceSuggestions(ArgumentSuggestions.stringsWithTooltips { getPositionNames() })) {
                 playerExecutor { player, args ->
                     val name = args[0] as String
-                    val position = positions[name] ?: return@playerExecutor
+                    val position = positions[name]
+                    if (position == null) {
+                        player.sendMessage(prefix + msg("command.position.noPosition", listOf(name)))
+                        return@playerExecutor
+                    }
                     player.teleport(position.toLocation())
                     player.playSound(player, Sound.ENTITY_ENDERMAN_TELEPORT, 1f, 1f)
-                    player.sendMessage(prefix + cmp("Zu Position $name teleportiert! ($position)"))
+                    player.sendMessage(prefix + msg("command.position.teleported", listOf(name, position.toString())))
                 }
             }
         }
         literalArgument("new") {
+            withPermission("mutils.position.manage")
             stringArgument("name") {
                 playerExecutor { player, args ->
                     val name = args[0] as String
                     val location = player.location
                     val liteLoc = LiteLocation(location.blockX, location.blockY, location.blockZ, location.world.name)
                     positions[name] = liteLoc
-                    player.sendMessage(prefix + cmp("Warp $name bei $liteLoc erstellt!", cSuccess))
+                    player.sendMessage(prefix + msg("command.position.created", listOf(name, liteLoc.toString())))
                 }
             }
         }
         literalArgument("remove") {
+            withPermission("mutils.position.manage")
             argument(StringArgument("name").replaceSuggestions(ArgumentSuggestions.stringsWithTooltips { getPositionNames() })) {
                 anyExecutor { commandSender, args ->
                     val name = args[0] as String
-                    positions.remove(name)
-                    commandSender.sendMessage(prefix + cmp("Warp $name wurde gelöscht!", cError))
+                    if (positions.remove(name) == null) {
+                        commandSender.sendMessage(prefix + msg("command.position.noPosition", listOf(name)))
+                        return@anyExecutor
+                    }
+                    commandSender.sendMessage(prefix + msg("command.position.deleted"))
                 }
             }
         }
         literalArgument("reset") {
+            withPermission("mutils.position.manage")
             anyExecutor { commandSender, _ ->
                 positions.clear()
-                commandSender.sendMessage(prefix + cmp("Alle Warps gelöscht!", cError))
+                commandSender.sendMessage(prefix + msg("command.position.resetted"))
             }
-        }.withPermission("mutils.position.reset")
+        }
     }
 
     private fun getPositionNames(): Array<IStringTooltip> {
         return positions.map { StringTooltip.ofString(it.key, it.value.toString()) }.toTypedArray()
     }
 
-    fun saveFile() {
+    override fun save() {
         if (!file.exists()) file.parentFile.mkdirs()
         file.writeText(json.encodeToString(positions))
+    }
+
+    override fun load() {
+        positions.clear()
+        if (file.exists()) {
+            val content = file.readText().ifBlank { "{}" }
+            try {
+                json.decodeFromString<Map<String, LiteLocation>>(content).forEach { (t, u) -> positions[t] = u }
+            } catch (e: Exception) {
+                console.sendMessage(prefix + cmp("Failed to load positions!", cError))
+                console.sendMessage(prefix + cmp("Reason: ${e.message ?: "Unknown"}", cError))
+            }
+        }
+    }
+
+    override fun reload() {
+        load()
     }
 }
 

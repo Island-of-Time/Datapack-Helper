@@ -2,16 +2,36 @@ package de.miraculixx.webServer.utils
 
 import de.miraculixx.kpaper.extensions.kotlin.enumOf
 import de.miraculixx.kpaper.localization.Config
-import de.miraculixx.webServer.command.AnimationCommand
+import de.miraculixx.webServer.command.*
+import de.miraculixx.webServer.interfaces.DataHolder
+import de.miraculixx.webServer.interfaces.Reloadable
 import org.bukkit.Material
 import java.io.File
 
 object SettingsManager {
     val settingsFolder = File("plugins/MUtils/BuilderTools").apply { if (!exists()) mkdirs() }
     private lateinit var config: Config
-    private val reloadable = listOf(
-        AnimationCommand
+    val commands = listOf(
+        AnimationCommand,
+        BlockUpdateCommand(),
+        CommandToolCommand(),
+        ConvertBlockCommand(),
+        HitBoxCommand(),
+        LeashCommand(),
+        MarkerCommand(),
+        MultiToolCommand(),
+        NameTagCommand(),
+        NewMessage(),
+        OriginToolCommand(),
+        PathingCommand(),
+        QuestBookCommand(),
+        ReloadDataPackCommand(),
+        TagToolCommand(),
+        TexturePackCommand(),
+        WarpCommand()
     )
+    private val reloadable = commands.filterIsInstance<Reloadable>()
+    private val dataHolder = commands.filterIsInstance<DataHolder>()
 
     lateinit var texturePackFolder: String
         private set
@@ -55,6 +75,10 @@ object SettingsManager {
         highlightPinkGlass = config.getBoolean("show-pink-glass")
 
         reloadable.forEach { rl -> rl.reload() }
+    }
+
+    fun save() {
+        dataHolder.forEach { it.save() }
     }
 
     fun saveReadFile(file: File, fallbackPath: String): String {

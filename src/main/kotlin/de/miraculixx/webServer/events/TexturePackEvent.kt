@@ -5,7 +5,6 @@ package de.miraculixx.webServer.events
 import de.miraculixx.kpaper.event.listen
 import de.miraculixx.kpaper.runnables.taskRunLater
 import de.miraculixx.webServer.Main
-import de.miraculixx.webServer.settings
 import de.miraculixx.webServer.utils.SettingsManager.groupFolders
 import de.miraculixx.webServer.utils.SettingsManager.texturePackFolder
 import de.miraculixx.webServer.utils.Zipping

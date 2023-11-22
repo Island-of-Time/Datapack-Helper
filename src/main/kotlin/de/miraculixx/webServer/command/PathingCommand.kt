@@ -358,7 +358,7 @@ class PathingCommand : Reloadable {
     }
 
     private fun Player.noEditor(): PathingData? {
-        sendMessage(prefix + cmp("You don't have any pathing creator! Create one via /pathing new", cError))
+        sendMessage(prefix + msg("command.pathing.noEditor"))
         return null
     }
 

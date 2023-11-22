@@ -65,6 +65,7 @@ command:
     spawn: "Spawned and connected leash points"
   marker:
     tool: "Added marker tool to your inventory"
+    toolFinder: "Added marker finder to your inventory"
   multi:
     tool: "Added multi tool to your inventory"
     modeRotate: "Multi tool mode changed to <#6e94ff>rotate"
@@ -97,6 +98,18 @@ command:
     reprinted: "<input-1> successfully reprinted to function"
     loaded: "Pathing script <input-1> loaded. You can edit or play it now"
     noEditor: "<red>You don't have any pathing creator! Start one via <u>/pathing new</u>"
+  reload:
+    reload: "<input-1> >> Reload all data packs..."
+    reloaded: "<green>Successfully reloaded all data packs! (<input-1>)"
+    warning: "(errors might appeared, check console for more information)"
+  resourcepack:
+    sent: "Sent resource pack group <input-1> to your client..."
+  position:
+    noPosition: "<red>The position <u><input-1></u> does not exist!"
+    teleported: "Teleported to <color:#6e94ff><input-1></color> (<input-2>)"
+    created: "<green>Position <u><input-1></u> at <input-2> created!"
+    deleted: "<red>Position <u><input-1></u> deleted!"
+    resetted: "<red>All permanently deleted!"
 
 
 #-----------------------------------------#
@@ -114,6 +127,7 @@ tool:
   marker:
     right: "Spawn marker (block)"
     left: "Remove marker (block)"
+    finderInfo: "Highlight all nearby markers<br>in range with green particles."
   multi:
     left: "Select entities - /multitool range"
     leftSneak: "Delete selection (confirm)"
@@ -124,3 +138,7 @@ tool:
     moveRightSneak: "Move with double distance (vector x2)"
     rotateRight: "Rotate selection on x-axis (vector)"
     rotateRightSneak: "Rotate selection on y-axis (vector)"
+  tag:
+    right: "Apply tags to target (entity)"
+    rightSneak: "Get all tags from target (entity)"
+    left: "Remove tags from target (entity)"
