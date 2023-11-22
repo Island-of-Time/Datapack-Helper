@@ -5,13 +5,41 @@ import de.miraculixx.kpaper.localization.Config
 import de.miraculixx.webServer.command.*
 import de.miraculixx.webServer.interfaces.DataHolder
 import de.miraculixx.webServer.interfaces.Reloadable
+import de.miraculixx.webServer.utils.data.PluginSettings
 import org.bukkit.Material
 import java.io.File
 
 object SettingsManager {
     val settingsFolder = File("plugins/MUtils/BuilderTools").apply { if (!exists()) mkdirs() }
+    val pluginSettings = PluginSettings()
     private lateinit var config: Config
-    val commands = listOf(
+
+    var texturePackFolder: String = String()
+        private set
+    var highlightGlobal: Material = Material.STONE
+        private set
+    var highlightStairs: Material = Material.STONE
+        private set
+    var highlightWalls: Material = Material.STONE
+        private set
+    var highlightFence: Material = Material.STONE
+        private set
+    var highlightSlabs: Material = Material.STONE
+        private set
+    var groupFolders: List<String> = emptyList()
+        private set
+    var messageFolder: String = String()
+        private set
+    var messageLanguages: List<String> = emptyList()
+        private set
+    var animationFolder: String = String()
+        private set
+    var pathingFolder: String = String()
+        private set
+    var highlightPinkGlass: Boolean = false
+        private set
+
+    private val commands = listOf(
         AnimationCommand,
         BlockUpdateCommand(),
         CommandToolCommand(),
@@ -32,32 +60,6 @@ object SettingsManager {
     )
     private val reloadable = commands.filterIsInstance<Reloadable>()
     private val dataHolder = commands.filterIsInstance<DataHolder>()
-
-    lateinit var texturePackFolder: String
-        private set
-    lateinit var highlightGlobal: Material
-        private set
-    lateinit var highlightStairs: Material
-        private set
-    lateinit var highlightWalls: Material
-        private set
-    lateinit var highlightFence: Material
-        private set
-    lateinit var highlightSlabs: Material
-        private set
-    lateinit var groupFolders: List<String>
-        private set
-    lateinit var messageFolder: String
-        private set
-    lateinit var messageLanguages: List<String>
-        private set
-    lateinit var animationFolder: String
-        private set
-    lateinit var pathingFolder: String
-        private set
-    var highlightPinkGlass: Boolean = false
-        private set
-
 
     fun reload() {
         config = Config(javaClass.getResourceAsStream("/settings.yml"), "settings", File(settingsFolder, "settings.yml"))

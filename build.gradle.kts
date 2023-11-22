@@ -33,10 +33,13 @@ dependencies {
     compileOnly("commons-codec:commons-codec:1.15")
     compileOnly("de.miraculixx:kpaper:1.1.1")
     compileOnly("de.miraculixx:mweb:1.1.0")
+
+    implementation("de.miraculixx:kpaper:1.1.1")
 }
 
 tasks {
     assemble {
+        dependsOn(shadowJar)
         dependsOn(reobfJar)
     }
     compileJava {
