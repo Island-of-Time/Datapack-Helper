@@ -1,5 +1,3 @@
-@file:Suppress("unused")
-
 package de.miraculixx.webServer.command
 
 import com.google.common.primitives.UnsignedInteger
@@ -7,10 +5,12 @@ import de.miraculixx.kpaper.extensions.bukkit.addCommand
 import de.miraculixx.kpaper.extensions.bukkit.addCopy
 import de.miraculixx.kpaper.localization.msg
 import de.miraculixx.kpaper.localization.msgString
+import de.miraculixx.webServer.interfaces.Module
 import de.miraculixx.webServer.utils.*
 import de.miraculixx.webServer.utils.SettingsManager.texturePackFolder
+import de.miraculixx.webServer.utils.extensions.command
+import de.miraculixx.webServer.utils.extensions.unregister
 import dev.jorel.commandapi.kotlindsl.anyExecutor
-import dev.jorel.commandapi.kotlindsl.commandTree
 import dev.jorel.commandapi.kotlindsl.textArgument
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
@@ -19,8 +19,8 @@ import net.kyori.adventure.audience.Audience
 import java.io.File
 import kotlin.jvm.optionals.getOrNull
 
-class NameTagCommand {
-    private val command = commandTree("nametag") {
+class NameTagCommand : Module {
+    private val command = command("nametag") {
         withPermission("buildertools.nametag")
 
         textArgument("content") {
@@ -97,6 +97,14 @@ class NameTagCommand {
             result.append(codePoint.toChar())
         }
         return result.toString()
+    }
+
+    override fun disable() {
+        command.unregister()
+    }
+
+    override fun enable() {
+        command.register()
     }
 
     @Serializable

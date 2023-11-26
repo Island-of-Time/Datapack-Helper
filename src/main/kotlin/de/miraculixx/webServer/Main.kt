@@ -3,7 +3,8 @@ package de.miraculixx.webServer
 import de.miraculixx.kpaper.extensions.pluginManager
 import de.miraculixx.kpaper.main.KPaper
 import de.miraculixx.mweb.api.MWebAPI
-import de.miraculixx.webServer.command.*
+import de.miraculixx.webServer.command.MapToolsCommand
+import de.miraculixx.webServer.command.ReloadDataPackCommand
 import de.miraculixx.webServer.events.*
 import de.miraculixx.webServer.utils.SettingsManager
 import de.miraculixx.webServer.utils.consoleSender
@@ -21,8 +22,6 @@ class Main : KPaper() {
         INSTANCE = this
         consoleSender = server.consoleSender
         CommandAPI.onLoad(CommandAPIBukkitConfig(this).silentLogs(true))
-
-        SettingsManager
     }
 
     override fun startup() {
@@ -30,15 +29,15 @@ class Main : KPaper() {
             mWebLoaded = true
             mWebAPI = MWebAPI.INSTANCE ?: throw ClassNotFoundException("Failed to load MWeb API while it's loaded. Did you reloaded your server?")
         }
-
         CommandAPI.onEnable()
 
-        LeashEvent()
+        // Core Modules
+        ReloadDataPackCommand()
+        MapToolsCommand()
         ToolEvent
-        NameTagEvent()
-        CommandPreprocess()
-        TexturePackEvent
-        BlockPlaceEvent
+
+        // All Modules
+        SettingsManager
     }
 
     override fun shutdown() {

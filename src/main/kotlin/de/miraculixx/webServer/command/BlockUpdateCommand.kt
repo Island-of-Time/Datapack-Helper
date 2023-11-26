@@ -4,17 +4,19 @@ import de.miraculixx.kpaper.event.listen
 import de.miraculixx.kpaper.event.register
 import de.miraculixx.kpaper.event.unregister
 import de.miraculixx.kpaper.localization.msg
+import de.miraculixx.webServer.interfaces.Module
+import de.miraculixx.webServer.utils.extensions.command
+import de.miraculixx.webServer.utils.extensions.unregister
 import de.miraculixx.webServer.utils.plus
 import de.miraculixx.webServer.utils.prefix
 import dev.jorel.commandapi.kotlindsl.anyExecutor
-import dev.jorel.commandapi.kotlindsl.commandTree
 import dev.jorel.commandapi.kotlindsl.literalArgument
 import org.bukkit.event.block.BlockPhysicsEvent
 
-class BlockUpdateCommand {
+class BlockUpdateCommand : Module {
     private var blockUpdates = true
 
-    private val command = commandTree("block-update") {
+    private val command = command("block-update") {
         literalArgument("toggle") {
             anyExecutor { sender, _ ->
                 if (blockUpdates) {
@@ -31,5 +33,13 @@ class BlockUpdateCommand {
 
     private val listener = listen<BlockPhysicsEvent>(register = false) {
         it.isCancelled = true
+    }
+
+    override fun disable() {
+        command.unregister()
+    }
+
+    override fun enable() {
+        command.register()
     }
 }

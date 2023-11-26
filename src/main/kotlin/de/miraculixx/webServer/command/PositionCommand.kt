@@ -3,9 +3,12 @@ package de.miraculixx.webServer.command
 import de.miraculixx.kpaper.extensions.console
 import de.miraculixx.kpaper.localization.msg
 import de.miraculixx.webServer.interfaces.DataHolder
+import de.miraculixx.webServer.interfaces.Module
 import de.miraculixx.webServer.interfaces.Reloadable
 import de.miraculixx.webServer.utils.*
 import de.miraculixx.webServer.utils.SettingsManager.settingsFolder
+import de.miraculixx.webServer.utils.extensions.command
+import de.miraculixx.webServer.utils.extensions.unregister
 import dev.jorel.commandapi.IStringTooltip
 import dev.jorel.commandapi.StringTooltip
 import dev.jorel.commandapi.arguments.ArgumentSuggestions
@@ -20,7 +23,7 @@ import org.bukkit.Location
 import org.bukkit.Sound
 import java.io.File
 
-class WarpCommand : Reloadable, DataHolder {
+class WarpCommand : Reloadable, DataHolder, Module {
     private val positions: MutableMap<String, LiteLocation>
     private val file = File(settingsFolder, "positions.json")
 
@@ -30,8 +33,7 @@ class WarpCommand : Reloadable, DataHolder {
         } else mutableMapOf()
     }
 
-    @Suppress("unused")
-    val command = commandTree("position") {
+    private val command = command("position") {
         withPermission("mutils.position")
 
         withAliases("pos", "location", "loc")
@@ -109,10 +111,18 @@ class WarpCommand : Reloadable, DataHolder {
     override fun reload() {
         load()
     }
-}
 
-@Serializable
-data class LiteLocation(val x: Int, val y: Int, val z: Int, val world: String) {
-    override fun toString() = "$x $y $z ($world)"
-    fun toLocation() = Location(Bukkit.getWorld(world), x.toDouble(), y.toDouble(), z.toDouble())
+    override fun disable() {
+        command.unregister()
+    }
+
+    override fun enable() {
+        command.register()
+    }
+
+    @Serializable
+    private data class LiteLocation(val x: Int, val y: Int, val z: Int, val world: String) {
+        override fun toString() = "$x $y $z ($world)"
+        fun toLocation() = Location(Bukkit.getWorld(world), x.toDouble(), y.toDouble(), z.toDouble())
+    }
 }

@@ -1,12 +1,12 @@
 name: MapTools
-load: STARTUP
+load: POSTWORLD
 version: 101
 main: de.miraculixx.webServer.Main
 api-version: 1.16
 authors: [ Miraculixx ]
 description: Map Builder Tools - Speed up your map creating process by multiple hours
 website: https://mutils.net/
-depend: [ "MUtils-Web" ]
+softdepend: [ "MUtils-Web" ]
 libraries:
   - "org.jetbrains.kotlin:kotlin-stdlib:1.9.20"
   - "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta"

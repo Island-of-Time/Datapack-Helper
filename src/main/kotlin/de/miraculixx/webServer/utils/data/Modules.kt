@@ -9,12 +9,16 @@ enum class Modules(val isSupporter: Boolean = false, val isExperimental: Boolean
     LEASH,
     MARKER,
     MULTI_TOOL,
-    NAME_TAG,
+    NAME_TAG(true),
     MESSAGES,
-    ORIGIN_TOOL(isExperimental = true),
+    ORIGIN_TOOL(true,true),
     PATHING,
     QUEST_BOOK(isExperimental = true),
     TAG_TOOL,
     RESOURCE_PACK,
-    POSITIONS
+    POSITIONS,
+    DANGER_WARNING,
+    TEXT_STYLING,
+
+    CORE
 }

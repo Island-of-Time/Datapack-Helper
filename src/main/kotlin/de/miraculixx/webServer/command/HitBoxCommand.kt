@@ -9,7 +9,10 @@ import de.miraculixx.kpaper.items.name
 import de.miraculixx.kpaper.localization.msg
 import de.miraculixx.kpaper.localization.msgString
 import de.miraculixx.webServer.events.ToolEvent.key
+import de.miraculixx.webServer.interfaces.Module
 import de.miraculixx.webServer.utils.*
+import de.miraculixx.webServer.utils.extensions.command
+import de.miraculixx.webServer.utils.extensions.unregister
 import dev.jorel.commandapi.arguments.LocationType
 import dev.jorel.commandapi.kotlindsl.*
 import org.bukkit.Location
@@ -21,8 +24,8 @@ import org.bukkit.inventory.ItemFlag
 import org.bukkit.persistence.PersistentDataType
 import kotlin.jvm.optionals.getOrNull
 
-class HitBoxCommand {
-    val command = commandTree("interaction") {
+class HitBoxCommand : Module {
+    val command = command("interaction") {
         literalArgument("spawn") {
             withPermission("buildertools.interaction")
 
@@ -92,5 +95,13 @@ class HitBoxCommand {
                 }
             }
         }
+    }
+
+    override fun disable() {
+        command.unregister()
+    }
+
+    override fun enable() {
+        command.register()
     }
 }

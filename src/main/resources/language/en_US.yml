@@ -32,12 +32,18 @@ common:
 #   Every command supports MiniMessages   #
 #-----------------------------------------#
 command:
+  main:
+    noModule: "<red><input-1> is not a valid module!"
+    alreadyOff: "<red>Module <input-1> is already turned off!"
+    alreadyOn: "<red>Module <input-1> is already turned on!"
+    turnedOn: "Module <input-1> is now <green>active"
+    turnedOff: "Module <input-1> is now <red>inactive"
   blockUpdates:
     off: "Block updates are <red>disabled</red> now"
     on: "Block updates are <green>enabled</green> now"
   animation:
     new: "New animation creator started! Add new points with /animation add"
-    addPoint: "New position added! Finish your animation with /animation finish"
+    addPoint: "New position added! Render your animation with /animation render"
     removeFailed: "<red>No points left to remove!"
     remove: "Removed last control point (<input-1>)"
     render: "Start rendering animation..."
@@ -84,6 +90,7 @@ command:
     missingTranslation: "Missing <input-1> translation for <color:#6e94ff><input-2></color>"
     validated: "<green>Validation complete!"
     built: "<green>Conversation successfully build to <input-1> (<input-2> messages)"
+    symbols: "Use following symbols for text delay:"
   pathing:
     new: "New Pathing script started..."
     newControl: "Added new control point <#6e94ff><input-1>"
@@ -113,10 +120,9 @@ command:
 
 
 #-----------------------------------------#
-#                  Items                  #
-#   Messages only visible on GUI items    #
-# Syntax: n -> Item Name                  #
-#         l -> Item Lore                  #
+#                  Tools                  #
+#   Messages only visible on tool items   #
+#      Syntax: tool.<name>.<action>       #
 #-----------------------------------------#
 tool:
   blockConverter:
@@ -131,6 +137,7 @@ tool:
   multi:
     left: "Select entities - /multitool range"
     leftSneak: "Delete selection (confirm)"
+    offhand: "Deselect selection"
     infoMode: "Switch action mode with /multitool mode"
     infoMove: "Move Mode"
     infoRotate: "Rotate Mode"
@@ -142,3 +149,59 @@ tool:
     right: "Apply tags to target (entity)"
     rightSneak: "Get all tags from target (entity)"
     left: "Remove tags from target (entity)"
+
+
+#-----------------------------------------#
+#                  Info                   #
+#    Guiding information about modules    #
+#-----------------------------------------#
+info:
+  ANIMATION:
+    desc: "Create smooth animations & camera paths - DataPack function"
+    guide: "Start with entering <blue>/animation new</blue> to begin a new setup. Now you can add as many new control points as you want to manipulate the animation with <blue>/animation add</blue>. The added point is your current location and you need at least 3 to create proper interpolation. Remove unwanted positions with <blue>/animation remove-last</blue>. To complete or test your animation render it with <blue>/animation render <loop> <ticks> <target></blue> (loop:true will connect the last point with the first, ticks is the animation time between each point and target a given selector). After rendering you can either continue modifying your animation or print it to a usable datapack function via <blue>/animation print <target> <name></blue> (name represents the function name, use \"\" for nested paths e.g. \"camera/island/front\")"
+  BLOCK_UPDATE:
+    desc: "Toggle block updates on block placing/breaking"
+    guide: "Use <blue>/block-update</blue> toggle to turn any updating on block placing/breaking. Turning updates off prevent other blocks change their state like sand will not fall or stairs not transform. WARNING - This might break some things"
+  COMMAND_TOOL:
+    desc: "Apply commands to your items"
+    guide: "Take an item in your hand and enter <blue>/commandtool command <command></blue> to apply any command to it. Right clicking anywhere executes the command either on the interaction point or on your position. Use <blue>/commandtool clear</blue> to remove it again"
+  BLOCK_CONVERTER:
+    desc: "Convert blocks into their block display state for manipulation"
+    guide: "To convert a single block use <blue>/blockify <position> <tag> <scale> [origin]</blue> (tag will be applied as tag to the created entity, scale is the final scale of the block where 1 is default, origin is the source location -> useful multi-block structures that should rotate). For easier use get the tool with <blue>/blockify-tool <scale> <tag> [origin]</blue> and click on any blocks to convert them"
+  HIT_BOX:
+    desc: "Wrap hitboxes around blocks or entities with tags"
+    guide: "To wrap an interaction hitbox around any entity or block enter <blue>/interaction spawn <target> [tag] [space]</blue> (target can be a block or selector, tag will be applied as tag to the interaction, space is the extra amount of size relativ to the source hitbox size in blocks). For easier use get the tool with <blue>/interaction tool <tag></blue> and click on any block or entity"
+  LEASH:
+    desc: "Make leashes connect with fences"
+    guide: "Take a leash in your hand and click on any fence (not walls). Now click on another fence <u>without</u> the leash in hand to connect them. Otherwise use <blue>/leash <from> <to></blue> to connect two fences"
+  MARKER:
+    desc: "(Un-)Mark blocks with tagged marker entities"
+    guide: "To get the marker tool enter <blue>/marker-tool <tag></blue> (tag will be applied as tag to the marker entity). Now you can right click any blocks to add the marker and left click to remove it again. Markers do not have any hitbox so to find them again you can use <blue>/marker-finder <range></blue> (range in blocks) to highlight all around you with green particles"
+  MULTI_TOOL:
+    desc: "Quickly Move, rotate, modify selected entities"
+    guide: "The multi tool is very complex and you might need some time to get used to it. Get one with <blue>/multitool get <entity> <radius> <vector></blue> (entity only targets entities by your selection, radius is the amount in blocks the beam search for entities, vector is the amount in blocks/degrees your selection will be moved/rotated). You find all hotkeys in the tool description. To switch between move and rotate mode enter <blue>/multitool mode <move/rotate></blue> or move/rotate your selection directly with <blue>/multitool rotate-by/move-by</blue> or change the beam range with <blue>/multitool range</blue>"
+  NAME_TAG:
+    desc: "Create fancy name tag symbols - ResourcePack required"
+    guide: "To create those custom name tags known from various servers simply enter <blue>/nametag <text> <main> <shadow> <char-shadow> [char]</blue> (text must be alphanumeric with a few extras like #-.,:;?!). All arguments (except text) are hex colors that support transparency. For example #ffffff represents white and #ffffff7f represents white with 7f (~50%) transparency. After generating the new image it will be added to the defined resource pack with a new generated char that you can copy from chat. You <b>NEED</b> to reload your pack from the server"
+  MESSAGES:
+    desc: "Create text/speak animations with custom messages - DataPack function"
+    guide: "To create a single animated message enter <blue>/message </blue>"
+  ORIGIN_TOOL:
+    desc: "Experimental - Used for creating shrinking/growing rooms"
+  PATHING:
+    desc: "Create custom entity movement, animations, scripts and more - DataPack function"
+  QUEST_BOOK:
+    desc: "Create a dynamic and helpful quest book - DataPack function"
+  TAG_TOOL:
+    desc: "Add, remove or just get tags from target entity"
+  RESOURCE_PACK:
+    desc: "(Auto) load resource packs with groups"
+  POSITIONS:
+    desc: "Save important locations and tp to them"
+  DANGER_WARNING:
+    desc: "Prevent you from entering dangerous commands"
+  TEXT_STYLING:
+    desc: "Makes any text input supports MiniMessage styling"
+  CORE:
+    desc: "Core features to make everything work (e.g. /reload-dp)"
+

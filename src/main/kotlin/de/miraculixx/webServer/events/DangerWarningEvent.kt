@@ -1,16 +1,19 @@
 package de.miraculixx.webServer.events
 
 import de.miraculixx.kpaper.event.listen
+import de.miraculixx.kpaper.event.register
+import de.miraculixx.kpaper.event.unregister
 import de.miraculixx.kpaper.extensions.bukkit.addCommand
+import de.miraculixx.webServer.interfaces.Module
 import de.miraculixx.webServer.utils.*
 import org.bukkit.Bukkit
 import org.bukkit.event.player.PlayerCommandPreprocessEvent
 import java.util.*
 
-class CommandPreprocess {
+class DangerWarningEvent: Module {
     private val lastCommand: MutableMap<UUID, String> = mutableMapOf()
 
-    val event = listen<PlayerCommandPreprocessEvent> {
+    private val event = listen<PlayerCommandPreprocessEvent>(register = false) {
         val message = it.message
         val player = it.player
         if (message.endsWith("kill @e") || message.endsWith("kill @a")) {
@@ -31,9 +34,16 @@ class CommandPreprocess {
                 )
                 player.sendMessage(prefix + cmp("Click ") + cmp("here", cMark).addHover(cmp(message)).addCommand(message) + cmp(" to execute it anyway"))
             }
-        } catch (_: IllegalArgumentException) {
-        }
+        } catch (_: IllegalArgumentException) {}
 
         lastCommand[player.uniqueId] = message
+    }
+
+    override fun disable() {
+        event.unregister()
+    }
+
+    override fun enable() {
+        event.register()
     }
 }

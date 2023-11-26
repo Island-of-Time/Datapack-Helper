@@ -8,15 +8,18 @@ import de.miraculixx.kpaper.localization.msgString
 import de.miraculixx.webServer.events.ToolEvent.key
 import de.miraculixx.webServer.events.ToolEvent.key2
 import de.miraculixx.webServer.events.ToolEvent.key3
+import de.miraculixx.webServer.interfaces.Module
 import de.miraculixx.webServer.utils.*
+import de.miraculixx.webServer.utils.extensions.command
+import de.miraculixx.webServer.utils.extensions.unregister
 import dev.jorel.commandapi.kotlindsl.*
 import org.bukkit.Material
 import org.bukkit.entity.EntityType
 import org.bukkit.persistence.PersistentDataType
 import kotlin.jvm.optionals.getOrNull
 
-class TagToolCommand {
-    val command = commandTree("tag-tool") {
+class TagToolCommand : Module {
+    private val command = command("tag-tool") {
         withPermission("buildertools.tag-tool")
         textArgument("tags") {
             entityTypeArgument("filter", true) {
@@ -46,5 +49,13 @@ class TagToolCommand {
                 }
             }
         }
+    }
+
+    override fun disable() {
+        command.unregister()
+    }
+
+    override fun enable() {
+        command.register()
     }
 }

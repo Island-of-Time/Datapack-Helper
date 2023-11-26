@@ -2,11 +2,14 @@ package de.miraculixx.webServer.command
 
 import de.miraculixx.kpaper.extensions.bukkit.addCommand
 import de.miraculixx.kpaper.extensions.bukkit.plus
+import de.miraculixx.webServer.interfaces.Module
+import de.miraculixx.webServer.utils.SettingsManager
 import de.miraculixx.webServer.utils.addHover
 import de.miraculixx.webServer.utils.cmp
+import de.miraculixx.webServer.utils.extensions.command
+import de.miraculixx.webServer.utils.extensions.unregister
 import de.miraculixx.webServer.utils.prefix
 import dev.jorel.commandapi.kotlindsl.anyExecutor
-import dev.jorel.commandapi.kotlindsl.commandTree
 import dev.jorel.commandapi.kotlindsl.integerArgument
 import net.kyori.adventure.text.Component
 import net.kyori.adventure.text.format.NamedTextColor
@@ -19,12 +22,13 @@ import org.jetbrains.annotations.ApiStatus.Experimental
 import java.io.File
 
 @Experimental
-class QuestBookCommand {
-    val datapackFile = File("world/datapacks/iot-general/data/logic/functions/quest-book")
-    val gson = GsonComponentSerializer.gson()
+class QuestBookCommand : Module {
+    // This module will get its own namespace if it ever should exit experimental
+    private val datapackFile = File("world/datapacks/${SettingsManager.pathingFolder}/data/logic/functions/quest-book")
+    private val gson = GsonComponentSerializer.gson()
     private val darkGray = TextColor.fromHexString("#4F4F4F")!!
 
-    val command = commandTree("quest-book") {
+    val command = command("quest-book") {
         integerArgument("chapter") {
             integerArgument("quests") {
                 anyExecutor { sender, args ->
@@ -77,5 +81,13 @@ class QuestBookCommand {
                     (cmp("\n   + ", darkGray) + Component.translatable("custom.quest.clue.next.n", NamedTextColor.BLACK))
                         .addHover(Component.translatable("custom.quest.clue.next.l")).addCommand("/trigger hint")
         )
+    }
+
+    override fun disable() {
+        command.unregister()
+    }
+
+    override fun enable() {
+        command.register()
     }
 }

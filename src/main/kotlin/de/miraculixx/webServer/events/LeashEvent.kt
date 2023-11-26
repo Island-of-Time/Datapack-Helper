@@ -12,7 +12,7 @@ import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 
 class LeashEvent {
-    val onFenceClick = listen<PlayerInteractEvent> {
+    val onFenceClick = listen<PlayerInteractEvent>(register = false) {
         val player = it.player
         val block = it.clickedBlock ?: return@listen
         val type = block.type

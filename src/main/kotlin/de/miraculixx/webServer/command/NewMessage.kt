@@ -1,13 +1,19 @@
 package de.miraculixx.webServer.command
 
+import de.miraculixx.kpaper.extensions.bukkit.addCopy
 import de.miraculixx.kpaper.extensions.console
+import de.miraculixx.kpaper.extensions.worlds
 import de.miraculixx.kpaper.localization.msg
 import de.miraculixx.kpaper.localization.msgString
+import de.miraculixx.webServer.interfaces.Module
 import de.miraculixx.webServer.interfaces.Reloadable
 import de.miraculixx.webServer.utils.*
 import de.miraculixx.webServer.utils.SettingsManager.messageFolder
 import de.miraculixx.webServer.utils.SettingsManager.messageLanguages
+import de.miraculixx.webServer.utils.SettingsManager.scoreboard
 import de.miraculixx.webServer.utils.SettingsManager.settingsFolder
+import de.miraculixx.webServer.utils.extensions.command
+import de.miraculixx.webServer.utils.extensions.unregister
 import dev.jorel.commandapi.arguments.ArgumentSuggestions
 import dev.jorel.commandapi.arguments.StringArgument
 import dev.jorel.commandapi.kotlindsl.*
@@ -19,8 +25,10 @@ import org.bukkit.Bukkit
 import java.io.File
 import java.util.*
 
-class NewMessage : Reloadable {
-    private var datapackFile = File("world/datapacks/${messageFolder}/data")
+class NewMessage : Reloadable, Module {
+    private lateinit var dataPackFolder: File
+    private lateinit var packMetaFile: File
+    private lateinit var functionFolder: File
     private val mm = MiniMessage.miniMessage()
     private val chatClearer = "{\"text\":\"\\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n \\n\"}"
     private val headerFile = File(settingsFolder, "header/messages.txt")
@@ -28,7 +36,7 @@ class NewMessage : Reloadable {
     private val headerRedirectFile = File(settingsFolder, "header/messagesRedirect.txt")
     private var headerRedirect = SettingsManager.saveReadFile(headerFile, "header/${headerRedirectFile.name}")
 
-    val command = commandTree("message") {
+    private val command = command("message") {
         withPermission("buildertools.message")
 
         literalArgument("new") {
@@ -36,13 +44,13 @@ class NewMessage : Reloadable {
                 textArgument("message") {
                     argument(StringArgument("lang").replaceSuggestions(ArgumentSuggestions.stringCollection { messageLanguages })) {
                         textArgument("name") {
-                            textArgument("target") {
+                            entitySelectorArgumentManyEntities("target") {
                                 anyExecutor { sender, args ->
                                     val prefix = args[0] as String
                                     val message = args[1] as String
                                     val lang = args[2] as String
                                     val name = args[3] as String
-                                    val targets = args[4] as String
+                                    val targets = args.getRaw(4) ?: "@a"
 
                                     val functionData = FunctionInfo(lang, name, UUID.randomUUID().toString(), targets, prefix, 1)
                                     calculateMessage(message, functionData)
@@ -61,13 +69,13 @@ class NewMessage : Reloadable {
 
         literalArgument("validate") {
             anyExecutor { sender, _ ->
-                val globals = getFileNamesInFolder(File(datapackFile, "chat/functions"))
+                val globals = getFileNamesInFolder(File(functionFolder, "chat/functions"))
                 val languages = messageLanguages
                 languages.forEach { lang ->
-                    val messages = getFileNamesInFolder(File(datapackFile, "$lang/functions"))
+                    val messages = getFileNamesInFolder(File(functionFolder, "$lang/functions"))
                     messages.toMutableSet().apply { removeAll(globals) }.forEach { name ->
                         sender.sendMessage(prefix + msg("command.message.missingGlobal", listOf(lang, name)))
-                        File(datapackFile, "chat/functions/$name.mcfunction").apply { parentFile.mkdirs() }.writeGlobal(name)
+                        File(functionFolder, "chat/functions/$name.mcfunction").apply { parentFile.mkdirs() }.writeGlobal(name)
                     }
 
                     globals.toMutableSet().apply { removeAll(messages) }.forEach { name ->
@@ -85,7 +93,7 @@ class NewMessage : Reloadable {
                     anyExecutor { sender, args ->
                         val name = args[0] as String
                         val lang = args[1] as String
-                        val file = File(datapackFile, "$lang/functions/${name.removeSuffix(".json")}.json")
+                        val file = File(functionFolder, "$lang/functions/${name.removeSuffix(".json")}.json")
                         if (!file.exists()) {
                             sender.sendMessage(prefix + cmp(msgString("common.fileNotFound"), cError))
                             return@anyExecutor
@@ -113,6 +121,18 @@ class NewMessage : Reloadable {
                 }
             }
         }
+
+        literalArgument("symbols") {
+            anyExecutor { sender, _ ->
+                sender.sendMessage(prefix + msg("command.message.symbols"))
+                val clickToCopy = cmp(msgString("common.copyLore"), cMark)
+                sender.sendMessage(
+                    cmp("1 tick -> ① ($msgCopy)").addCopy("①").addHover(clickToCopy) +
+                            cmp("\n5 ticks -> ⑤ ($msgCopy)").addCopy("⑤").addHover(clickToCopy) +
+                            cmp("\n20 ticks -> ⑳ ($msgCopy)").addCopy("⑳").addHover(clickToCopy)
+                )
+            }
+        }
     }
 
     private fun getFileNamesInFolder(folder: File?): Set<String> {
@@ -125,8 +145,8 @@ class NewMessage : Reloadable {
     }
 
     private fun calculateMessage(message: String, data: FunctionInfo) {
-        val targetFile = File(datapackFile, "${data.lang}/functions/${data.functionName}.mcfunction")
-        val globalFile = File(datapackFile, "chat/functions/${data.functionName}.mcfunction")
+        val targetFile = File(functionFolder, "${data.lang}/functions/${data.functionName}.mcfunction")
+        val globalFile = File(functionFolder, "chat/functions/${data.functionName}.mcfunction")
         if (!targetFile.exists()) targetFile.parentFile.mkdirs()
         if (!globalFile.exists()) globalFile.parentFile.mkdirs()
         val namespace = data.scoreName
@@ -140,13 +160,14 @@ class NewMessage : Reloadable {
             append(body.first)
             append(
                 "\n\n# Looping & Reset\n" +
-                        "scoreboard players add $namespace text-ticker 1\n" +
-                        "execute if score $namespace text-ticker matches ..${iterations} run schedule function ${data.lang}:${data.functionName} 1t replace\n" +
-                        "execute if score $namespace text-ticker matches ${iterations + 1}.. run scoreboard players set $namespace text-ticker 0"
+                        "scoreboard players add $namespace $scoreboard 1\n" +
+                        "execute if score $namespace $scoreboard matches ..${iterations} run schedule function ${data.lang}:${data.functionName} 1t replace\n" +
+                        "execute if score $namespace $scoreboard matches ${iterations + 1}.. run scoreboard players set $namespace $scoreboard 0"
             )
         }
         targetFile.writeText(final)
         globalFile.writeGlobal(data.functionName)
+        if (!packMetaFile.exists()) packMetaFile.writeBytes(SettingsManager.packMeta)
     }
 
     private fun File.writeGlobal(name: String) {
@@ -201,7 +222,7 @@ class NewMessage : Reloadable {
                 }
                 text += char
 
-                val command = "execute if score ${functionInfo.scoreName} text-ticker matches ${functionInfo.currentTick} run tellraw ${functionInfo.target}"
+                val command = "execute if score ${functionInfo.scoreName} $scoreboard matches ${functionInfo.currentTick} run tellraw ${functionInfo.target}"
                 val current = gson.serialize(mm.deserialize(text))
                 append("\n$command [$chatClearer,$prefix,$current]")
 
@@ -211,9 +232,19 @@ class NewMessage : Reloadable {
     }
 
     override fun reload() {
-        datapackFile = File("world/datapacks/${messageFolder}/data")
+        dataPackFolder = File("${worlds.first().name}/datapacks/$messageFolder")
+        packMetaFile = File(dataPackFolder, "pack.mcmeta")
+        functionFolder = File(dataPackFolder, "data")
         header = SettingsManager.saveReadFile(headerFile, "header/${headerFile.name}")
         headerRedirect = SettingsManager.saveReadFile(headerFile, "header/${headerRedirectFile.name}")
+    }
+
+    override fun disable() {
+        command.unregister()
+    }
+
+    override fun enable() {
+        command.register()
     }
 
     @Serializable

@@ -3,18 +3,20 @@ package de.miraculixx.webServer.command
 import de.miraculixx.kpaper.extensions.bukkit.getHandItem
 import de.miraculixx.kpaper.localization.msg
 import de.miraculixx.webServer.events.ToolEvent
-import de.miraculixx.webServer.utils.*
+import de.miraculixx.webServer.interfaces.Module
+import de.miraculixx.webServer.utils.extensions.command
+import de.miraculixx.webServer.utils.extensions.unregister
 import de.miraculixx.webServer.utils.gui.logic.InventoryUtils.get
+import de.miraculixx.webServer.utils.plus
+import de.miraculixx.webServer.utils.prefix
 import dev.jorel.commandapi.kotlindsl.commandArgument
-import dev.jorel.commandapi.kotlindsl.commandTree
 import dev.jorel.commandapi.kotlindsl.literalArgument
 import dev.jorel.commandapi.kotlindsl.playerExecutor
 import org.bukkit.inventory.EquipmentSlot
 import org.bukkit.persistence.PersistentDataType
 
-class CommandToolCommand {
-    @Suppress("unused")
-    private val command = commandTree("commandtool") {
+class CommandToolCommand : Module {
+    private val command = command("commandtool") {
         withPermission("buildertools.commandtool")
 
         commandArgument("command") {
@@ -57,5 +59,13 @@ class CommandToolCommand {
                 player.sendMessage(prefix + msg("command.commandtool.clear"))
             }
         }
+    }
+
+    override fun disable() {
+        command.unregister()
+    }
+
+    override fun enable() {
+        command.register()
     }
 }

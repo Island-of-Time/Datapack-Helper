@@ -11,6 +11,13 @@ block-highlight:
   other: YELLOW_CONCRETE
 
 #
+# - Ticking Scoreboard
+# This scoreboard is used to play animations.
+# Changing it will break all animations/messages/etc created before.
+#
+tick-scoreboard: "maptools.tick"
+
+#
 # - Texturepack folder
 # Inside this folder all folders not starting with a '.' will be merged together and sent
 # to the player on request.
@@ -27,8 +34,8 @@ texturepack-folder: "texturepack"
 # If a player has a group tag, the texturepack will automatically load on joining.
 #
 texturepack-groups:
-  - "player1"
-  - "player2"
+  - "general"
+  - "gui"
 
 #
 # - Message DataPack Folder
@@ -38,9 +45,9 @@ texturepack-groups:
 # Animations & Pathing: Use 'animation' namespace
 #
 datapack-names:
-  messages: "iot-chat"
-  animations: "iot-general"
-  pathing: "iot-general"
+  messages: "maptools.chat"
+  animations: "maptools.animations"
+  pathing: "maptools.pathing"
 
 #
 # - Message Languages

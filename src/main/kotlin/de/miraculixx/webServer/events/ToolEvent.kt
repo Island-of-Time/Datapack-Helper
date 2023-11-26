@@ -6,12 +6,9 @@ import de.miraculixx.kpaper.event.listen
 import de.miraculixx.kpaper.extensions.bukkit.dispatchCommand
 import de.miraculixx.kpaper.extensions.console
 import de.miraculixx.kpaper.extensions.geometry.add
-import de.miraculixx.kpaper.extensions.geometry.minus
 import de.miraculixx.kpaper.extensions.kotlin.enumOf
 import de.miraculixx.kpaper.extensions.onlinePlayers
 import de.miraculixx.kpaper.items.customModel
-import de.miraculixx.kpaper.items.itemStack
-import de.miraculixx.kpaper.items.meta
 import de.miraculixx.kpaper.localization.msg
 import de.miraculixx.kpaper.runnables.task
 import de.miraculixx.kpaper.runnables.taskRunLater
@@ -26,6 +23,7 @@ import de.miraculixx.webServer.utils.SettingsManager.highlightPinkGlass
 import de.miraculixx.webServer.utils.SettingsManager.highlightSlabs
 import de.miraculixx.webServer.utils.SettingsManager.highlightStairs
 import de.miraculixx.webServer.utils.SettingsManager.highlightWalls
+import de.miraculixx.webServer.utils.data.Modules
 import de.miraculixx.webServer.utils.gui.logic.InventoryUtils.get
 import org.bukkit.*
 import org.bukkit.block.BlockFace
@@ -70,7 +68,6 @@ object ToolEvent {
         val container = meta.persistentDataContainer
 
         val commandTool = container.get(keyCommand)
-        println(commandTool)
         if (commandTool != null) {
             val loc = it.interactionPoint ?: player.location
             console.dispatchCommand("execute positioned ${loc.x} ${loc.y} ${loc.z} run $commandTool")
@@ -83,6 +80,7 @@ object ToolEvent {
         when (item.type) {
             // Convertor Tool
             Material.SHEARS -> {
+                if (!SettingsManager.getModuleState(Modules.BLOCK_CONVERTER)) return@listen
                 if (!player.hasPermission("buildertools.blockify-tool")) return@listen
                 val block = it.clickedBlock ?: return@listen
                 if (cooldown.contains(player)) return@listen
@@ -96,6 +94,7 @@ object ToolEvent {
 
             // Marker Tool
             Material.SPECTRAL_ARROW -> {
+                if (!SettingsManager.getModuleState(Modules.MARKER)) return@listen
                 if (!player.hasPermission("buildertools.marker-tool")) return@listen
                 val block = it.clickedBlock ?: return@listen
                 val tag = container.get(key, PersistentDataType.STRING)
@@ -116,6 +115,7 @@ object ToolEvent {
 
             // Multitool
             Material.FEATHER -> {
+                if (!SettingsManager.getModuleState(Modules.MULTI_TOOL)) return@listen
                 if (!player.hasPermission("buildertools.multitool")) return@listen
                 it.isCancelled = true
                 val multiData = multiToolSelection.getOrPut(player.uniqueId) { mutableMapOf() }
@@ -158,6 +158,7 @@ object ToolEvent {
 
             // Interaction Tool
             Material.SHULKER_SHELL -> {
+                if (!SettingsManager.getModuleState(Modules.HIT_BOX)) return@listen
                 if (!player.hasPermission("buildertools.interaction-tool")) return@listen
                 val block = it.clickedBlock ?: return@listen
                 val tag = container.get(key)
@@ -173,6 +174,7 @@ object ToolEvent {
 
             // Tag Tool
             Material.ARROW -> {
+                if (!SettingsManager.getModuleState(Modules.TAG_TOOL)) return@listen
                 if (!player.hasPermission("buildertools.tag-tool")) return@listen
 
                 it.isCancelled = true
@@ -198,34 +200,6 @@ object ToolEvent {
                 }
             }
 
-            Material.ENDER_EYE -> {
-                if (!player.hasPermission("buildertools.origin-tool")) return@listen
-
-                it.isCancelled = true
-                val block = it.clickedBlock ?: return@listen
-
-                val originT = container.get(key)?.split(':') ?: return@listen
-                val origin = Location(block.world, originT[0].toDouble(), originT[1].toDouble(), originT[2].toDouble())
-                val offsetT = container.get(key2)?.split(':') ?: return@listen
-                val offset = Location(block.world, offsetT[0].toDouble(), offsetT[1].toDouble(), offsetT[2].toDouble())
-                val tag = container.get(key3)
-
-                val itemEntity = block.world.spawn(block.location.add(offset), Item::class.java)
-                itemEntity.isUnlimitedLifetime = true
-                itemEntity.setCanPlayerPickup(false)
-                itemEntity.isInvulnerable = true
-                itemEntity.setGravity(true)
-                itemEntity.itemStack = itemStack(Material.STICK) {
-                    meta {
-                        val blockOffset = block.location.minus(origin)
-                        val newPDC = container.adapterContext.newPersistentDataContainer()
-                        newPDC.set(tagX, PersistentDataType.INTEGER, blockOffset.blockX)
-                        newPDC.set(tagZ, PersistentDataType.INTEGER, blockOffset.blockZ)
-                        persistentDataContainer.set(key3, PersistentDataType.TAG_CONTAINER, newPDC)
-                    }
-                }
-            }
-
             else -> Unit
         }
 
@@ -234,13 +208,14 @@ object ToolEvent {
     }
 
     private val onSwap = listen<PlayerSwapHandItemsEvent> {
-        val item = it.offHandItem ?: return@listen
+        val item = it.offHandItem
         val meta = item.itemMeta ?: return@listen
         if (meta.customModel != 100) return@listen
         val player = it.player
 
         when (item.type) {
             Material.FEATHER -> {
+                if (!SettingsManager.getModuleState(Modules.MULTI_TOOL)) return@listen
                 if (!player.hasPermission("buildertools.multitool")) return@listen
                 it.isCancelled = true
                 val multiData = multiToolSelection[player.uniqueId] ?: return@listen
@@ -274,6 +249,7 @@ object ToolEvent {
 
         when (item.type) {
             Material.SHULKER_SHELL -> {
+                if (!SettingsManager.getModuleState(Modules.HIT_BOX)) return@listen
                 if (!player.hasPermission("buildertools.interaction-tool")) return@listen
                 val type = entity.type
                 if (type == EntityType.INTERACTION) return@listen
@@ -286,6 +262,7 @@ object ToolEvent {
             }
 
             Material.ARROW -> {
+                if (!SettingsManager.getModuleState(Modules.TAG_TOOL)) return@listen
                 val pdc = meta.persistentDataContainer
                 val tags = pdc.get(key, PersistentDataType.STRING)?.split(' ')?.toSet() ?: return@listen
                 val filter = pdc.get(key2, PersistentDataType.STRING)?.let { t -> enumOf<EntityType>(t) }
@@ -306,6 +283,7 @@ object ToolEvent {
 
         when (item.type) {
             Material.FEATHER -> {
+                if (!SettingsManager.getModuleState(Modules.MULTI_TOOL)) return@listen
                 if (!player.hasPermission("buildertools.multitool")) return@listen
                 val multiData = multiToolSelection.getOrPut(player.uniqueId) { mutableMapOf() }
                 val multiSettings = multiToolData.getOrPut(player.uniqueId) { MultiToolCommand.MultiToolData() }
@@ -314,6 +292,7 @@ object ToolEvent {
             }
 
             Material.ARROW -> {
+                if (!SettingsManager.getModuleState(Modules.TAG_TOOL)) return@listen
                 val pdc = meta.persistentDataContainer
                 val tags = pdc.get(key, PersistentDataType.STRING)?.split(' ')?.toSet() ?: return@listen
                 val filter = pdc.get(key2, PersistentDataType.STRING)?.let { t -> enumOf<EntityType>(t) }
@@ -323,6 +302,7 @@ object ToolEvent {
             }
 
             Material.SHULKER_SHELL -> {
+                if (!SettingsManager.getModuleState(Modules.HIT_BOX)) return@listen
                 if (!player.hasPermission("buildertools.interaction-tool")) return@listen
                 if (entity.type != EntityType.INTERACTION) return@listen
                 entity.remove()
@@ -334,11 +314,14 @@ object ToolEvent {
     }
 
     private val task = task(true, 0, 10) {
+        val multiToolState = SettingsManager.getModuleState(Modules.MULTI_TOOL)
+        val markerFinderState = SettingsManager.getModuleState(Modules.MARKER)
         onlinePlayers.forEach { p ->
             val item = p.inventory.itemInMainHand
 
             when (item.type) {
                 Material.RECOVERY_COMPASS -> {
+                    if (!markerFinderState) return@forEach
                     if (!p.hasPermission("buildertools.marker-finder")) return@forEach
 
                     if (item.itemMeta?.customModel != 100) return@forEach
@@ -367,6 +350,7 @@ object ToolEvent {
                 }
 
                 Material.FEATHER -> {
+                    if (!multiToolState) return@forEach
                     if (!p.hasPermission("buildertools.multitool")) return@forEach
 
                     if (item.itemMeta?.customModel != 100) return@forEach

@@ -3,13 +3,19 @@
 package de.miraculixx.webServer.command
 
 import de.miraculixx.kpaper.extensions.bukkit.addCommand
+import de.miraculixx.kpaper.extensions.worlds
 import de.miraculixx.kpaper.localization.msg
 import de.miraculixx.kpaper.runnables.task
 import de.miraculixx.webServer.CatmullRomSpline
+import de.miraculixx.webServer.interfaces.Module
 import de.miraculixx.webServer.interfaces.Reloadable
+import de.miraculixx.webServer.utils.SettingsManager
 import de.miraculixx.webServer.utils.SettingsManager.animationFolder
 import de.miraculixx.webServer.utils.SettingsManager.saveReadFile
+import de.miraculixx.webServer.utils.SettingsManager.scoreboard
 import de.miraculixx.webServer.utils.SettingsManager.settingsFolder
+import de.miraculixx.webServer.utils.extensions.command
+import de.miraculixx.webServer.utils.extensions.unregister
 import de.miraculixx.webServer.utils.plus
 import de.miraculixx.webServer.utils.prefix
 import dev.jorel.commandapi.kotlindsl.*
@@ -17,19 +23,20 @@ import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Entity
 import org.bukkit.entity.Player
-import org.joml.Vector3d
 import java.awt.geom.Point2D
 import java.io.File
 import java.util.*
 
-object AnimationCommand : Reloadable {
-    private var dataPackFolder = File("world/datapacks/${animationFolder}/data/animation/functions")
+class AnimationCommand : Reloadable, Module {
+    private lateinit var dataPackFolder: File
+    private lateinit var packMetaFile: File
+    private lateinit var functionFolder: File
     private val creators: MutableMap<UUID, CreatorData> = mutableMapOf()
     private val headerFile = File(settingsFolder, "header/animation.txt")
     private var header = saveReadFile(headerFile, "header/animation.txt")
 
     @Suppress("unused")
-    private val mainCommand = commandTree("animation") {
+    private val command = command("animation") {
         withPermission("buildertools.animation")
 
         literalArgument("new") {
@@ -115,7 +122,7 @@ object AnimationCommand : Reloadable {
                 textArgument("name") {
                     playerExecutor { player, args ->
                         val name = args[1] as String
-                        val file = File(dataPackFolder, "$name.mcfunction")
+                        val file = File(functionFolder, "$name.mcfunction")
                         if (!file.parentFile.exists()) file.parentFile.mkdirs()
                         val target = args.getRaw(0) ?: "@s"
                         val data = creators[player.uniqueId] ?: player.noEditor() ?: return@playerExecutor
@@ -128,7 +135,7 @@ object AnimationCommand : Reloadable {
                             data.interpolation.forEach { pos ->
                                 //execute if score c1e27c23-8bcd-40fa-84f3-96dd918e9e6c text-ticker matches <x> run teleport <target> <location>
                                 append(
-                                    "\nexecute if score $scoreID text-ticker matches $ticker run teleport $target " +
+                                    "\nexecute if score $scoreID $scoreboard matches $ticker run teleport $target " +
                                             "${pos.x.validate()} " +
                                             "${pos.y.validate()} " +
                                             "${pos.z.validate()} " +
@@ -140,12 +147,13 @@ object AnimationCommand : Reloadable {
 
                             append(
                                 "\n\n# Looping & Reset\n" +
-                                        "scoreboard players add $scoreID text-ticker 1\n" +
-                                        "execute if score $scoreID text-ticker matches ..$ticker run schedule function animation:$name 1t replace\n" +
-                                        "execute if score $scoreID text-ticker matches ${ticker + 1}.. run scoreboard players set $scoreID text-ticker 0"
+                                        "scoreboard players add $scoreID $scoreboard 1\n" +
+                                        "execute if score $scoreID $scoreboard matches ..$ticker run schedule function animation:$name 1t replace\n" +
+                                        "execute if score $scoreID $scoreboard matches ${ticker + 1}.. run scoreboard players set $scoreID $scoreboard 0"
                             )
                         }
                         file.writeText(content)
+                        if (!packMetaFile.exists()) packMetaFile.writeBytes(SettingsManager.packMeta)
 
                         Bukkit.reloadData()
                         player.sendMessage(prefix + msg("command.animation.finish").addCommand("/function animation:$name"))
@@ -160,21 +168,25 @@ object AnimationCommand : Reloadable {
         return null
     }
 
+    // Overrides
     override fun reload() {
         header = saveReadFile(headerFile, "header/animation.txt")
-        dataPackFolder = File("world/datapacks/${animationFolder}/data/animation/functions")
+        dataPackFolder = File("${worlds.first().name}/datapacks/${animationFolder}")
+        packMetaFile = File(dataPackFolder, "pack.mcmeta")
+        functionFolder = File(dataPackFolder, "data/animation/functions")
+    }
+
+    override fun disable() {
+        command.unregister()
+    }
+
+    override fun enable() {
+        command.register()
     }
 
     private data class CreatorData(val points: MutableList<Location>, var interpolation: List<Location>)
-}
 
-private operator fun Vector3d.minus(other: Vector3d): Vector3d {
-    return Vector3d(x - other.x, y - other.y, z - other.z)
+    // Number extensions
+    private fun Float.validate() = takeIf { it.isFinite() } ?: 0f
+    private fun Double.validate() = takeIf { it.isFinite() } ?: 0.0
 }
-
-private operator fun Vector3d.times(scalar: Double): Vector3d {
-    return Vector3d(x * scalar, y * scalar, z * scalar)
-}
-
-fun Float.validate() = takeIf { it.isFinite() } ?: 0f
-fun Double.validate() = takeIf { it.isFinite() } ?: 0.0

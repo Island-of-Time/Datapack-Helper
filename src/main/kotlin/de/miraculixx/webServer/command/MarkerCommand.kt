@@ -1,5 +1,3 @@
-@file:Suppress("unused")
-
 package de.miraculixx.webServer.command
 
 import de.miraculixx.kpaper.items.customModel
@@ -10,8 +8,10 @@ import de.miraculixx.kpaper.localization.msg
 import de.miraculixx.kpaper.localization.msgList
 import de.miraculixx.kpaper.localization.msgString
 import de.miraculixx.webServer.events.ToolEvent.key
+import de.miraculixx.webServer.interfaces.Module
 import de.miraculixx.webServer.utils.*
-import dev.jorel.commandapi.kotlindsl.commandTree
+import de.miraculixx.webServer.utils.extensions.command
+import de.miraculixx.webServer.utils.extensions.unregister
 import dev.jorel.commandapi.kotlindsl.integerArgument
 import dev.jorel.commandapi.kotlindsl.playerExecutor
 import dev.jorel.commandapi.kotlindsl.stringArgument
@@ -20,8 +20,8 @@ import org.bukkit.enchantments.Enchantment
 import org.bukkit.inventory.ItemFlag
 import org.bukkit.persistence.PersistentDataType
 
-class MarkerCommand {
-    val block = commandTree("marker-tool") {
+class MarkerCommand : Module {
+    private val command1 = command("marker-tool") {
         withPermission("buildertools.marker-tool")
 
         stringArgument("tag") {
@@ -30,11 +30,13 @@ class MarkerCommand {
                     meta {
                         val tag = args[0] as String
                         name = cmp("Block Marker - $tag", cError)
-                        lore(listOf(
-                            emptyComponent(),
-                            msgClickRight + cmp(msgString("tool.marker.right")),
-                            msgClickLeft + cmp(msgString("tool.marker.left")),
-                        ))
+                        lore(
+                            listOf(
+                                emptyComponent(),
+                                msgClickRight + cmp(msgString("tool.marker.right")),
+                                msgClickLeft + cmp(msgString("tool.marker.left")),
+                            )
+                        )
                         persistentDataContainer.set(key, PersistentDataType.STRING, tag)
                         customModel = 100
                         addEnchant(Enchantment.MENDING, 1, true)
@@ -47,7 +49,7 @@ class MarkerCommand {
         }
     }
 
-    val finder = commandTree("marker-finder") {
+    private val command2 = command("marker-finder") {
         withPermission("buildertools.marker-finder")
 
         integerArgument("range") {
@@ -67,5 +69,15 @@ class MarkerCommand {
                 player.sendMessage(prefix + msg("command.marker.toolFinder"))
             }
         }
+    }
+
+    override fun disable() {
+        command1.unregister()
+        command2.unregister()
+    }
+
+    override fun enable() {
+        command1.register()
+        command2.register()
     }
 }

@@ -1,5 +1,3 @@
-@file:Suppress("unused")
-
 package de.miraculixx.webServer.command
 
 import de.miraculixx.kpaper.items.customModel
@@ -11,7 +9,10 @@ import de.miraculixx.kpaper.localization.msgString
 import de.miraculixx.webServer.events.ToolEvent.key
 import de.miraculixx.webServer.events.ToolEvent.key2
 import de.miraculixx.webServer.events.ToolEvent.key3
+import de.miraculixx.webServer.interfaces.Module
 import de.miraculixx.webServer.utils.*
+import de.miraculixx.webServer.utils.extensions.command
+import de.miraculixx.webServer.utils.extensions.unregister
 import dev.jorel.commandapi.arguments.LocationType
 import dev.jorel.commandapi.kotlindsl.*
 import org.bukkit.Location
@@ -26,8 +27,8 @@ import org.joml.Quaternionf
 import org.joml.Vector3f
 import kotlin.jvm.optionals.getOrNull
 
-class ConvertBlockCommand {
-    private val convertCommand = commandTree("blockify") {
+class ConvertBlockCommand: Module {
+    private val command1 = command("blockify") {
         withPermission("buildertools.blockify")
 
         locationArgument("pos", LocationType.BLOCK_POSITION) {
@@ -65,7 +66,7 @@ class ConvertBlockCommand {
         }
     }
 
-    private val items = commandTree("blockify-tool") {
+    private val command2 = command("blockify-tool") {
         withPermission("buildertools.blockify-tool")
 
         floatArgument("scale") {
@@ -99,5 +100,15 @@ class ConvertBlockCommand {
                 }
             }
         }
+    }
+
+    override fun disable() {
+        command1.unregister()
+        command2.unregister()
+    }
+
+    override fun enable() {
+        command1.register()
+        command2.register()
     }
 }

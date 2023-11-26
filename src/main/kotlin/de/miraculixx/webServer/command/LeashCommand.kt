@@ -2,11 +2,16 @@
 
 package de.miraculixx.webServer.command
 
+import de.miraculixx.kpaper.event.register
+import de.miraculixx.kpaper.event.unregister
 import de.miraculixx.kpaper.localization.msg
+import de.miraculixx.webServer.events.LeashEvent
+import de.miraculixx.webServer.interfaces.Module
+import de.miraculixx.webServer.utils.extensions.command
+import de.miraculixx.webServer.utils.extensions.unregister
 import de.miraculixx.webServer.utils.plus
 import de.miraculixx.webServer.utils.prefix
 import dev.jorel.commandapi.arguments.LocationType
-import dev.jorel.commandapi.kotlindsl.commandTree
 import dev.jorel.commandapi.kotlindsl.locationArgument
 import dev.jorel.commandapi.kotlindsl.playerExecutor
 import org.bukkit.Location
@@ -17,8 +22,10 @@ import org.bukkit.entity.Parrot
 import org.bukkit.potion.PotionEffect
 import org.bukkit.potion.PotionEffectType
 
-class LeashCommand {
-    val knotCommand = commandTree("leash") {
+class LeashCommand : Module {
+    private val leashEvent = LeashEvent()
+
+    private val command = command("leash") {
         withPermission("buildertools.leash")
 
         locationArgument("pos1", LocationType.BLOCK_POSITION) {
@@ -56,8 +63,18 @@ class LeashCommand {
     }
 
     private fun spawnInteraction(location: Location) {
-        val interaction = location.world.spawnEntity(location.add(0.5,0.3,0.5), EntityType.INTERACTION) as Interaction
+        val interaction = location.world.spawnEntity(location.add(0.5, 0.3, 0.5), EntityType.INTERACTION) as Interaction
         interaction.interactionHeight = 0.6f
         interaction.interactionWidth = 0.45f
+    }
+
+    override fun disable() {
+        leashEvent.onFenceClick.unregister()
+        command.unregister()
+    }
+
+    override fun enable() {
+        leashEvent.onFenceClick.register()
+        command.register()
     }
 }

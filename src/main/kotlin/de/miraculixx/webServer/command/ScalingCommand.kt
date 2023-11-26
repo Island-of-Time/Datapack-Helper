@@ -1,10 +1,10 @@
 package de.miraculixx.webServer.command
 
 import de.miraculixx.kpaper.extensions.geometry.minus
-import de.miraculixx.webServer.events.BlockPlaceEvent
-import de.miraculixx.webServer.utils.cmp
-import de.miraculixx.webServer.utils.plus
-import de.miraculixx.webServer.utils.prefix
+import de.miraculixx.webServer.interfaces.Module
+import de.miraculixx.webServer.utils.SettingsManager.pathingFolder
+import de.miraculixx.webServer.utils.extensions.command
+import de.miraculixx.webServer.utils.extensions.unregister
 import dev.jorel.commandapi.arguments.LocationType
 import dev.jorel.commandapi.kotlindsl.*
 import org.bukkit.Bukkit
@@ -18,35 +18,11 @@ import kotlin.math.max
 import kotlin.math.min
 
 @Experimental
-class OriginToolCommand {
-    private val folder = File("world/datapacks/iot-general/data/logic/functions")
+class ScalingCommand : Module {
+    // This module will get its own namespace if it ever should exit experimental
+    private val folder = File("world/datapacks/$pathingFolder/data/logic/functions")
 
-    private val command = commandTree("place-mode") {
-        literalArgument("tag") {
-            stringArgument("tag") {
-                playerExecutor { player, args ->
-                    val mode = BlockPlaceEvent.playerModes[player.uniqueId] ?: BlockPlaceEvent.Mode()
-                    mode.tag = args[0] as String
-                    BlockPlaceEvent.playerModes[player.uniqueId] = mode
-                    player.sendMessage(prefix + cmp("Place tagger set to ${mode.tag}"))
-                }
-            }
-        }
-
-        literalArgument("resizer") {
-            doubleArgument("size") {
-                playerExecutor { player, args ->
-                    val mode = BlockPlaceEvent.playerModes[player.uniqueId] ?: BlockPlaceEvent.Mode()
-                    mode.resizer = !mode.resizer
-                    mode.resizerNumber = args[0] as Double
-                    BlockPlaceEvent.playerModes[player.uniqueId] = mode
-                    player.sendMessage(prefix + cmp("Place resizer is now ${mode.resizer} (${mode.resizerNumber})"))
-                }
-            }
-        }
-    }
-
-    private val command2 = commandTree("origin") {
+    private val command = command("scaling") {
         locationArgument("from", LocationType.BLOCK_POSITION) {
             locationArgument("to", LocationType.BLOCK_POSITION) {
                 locationArgument("origin", LocationType.BLOCK_POSITION) {
@@ -109,5 +85,13 @@ class OriginToolCommand {
                 }
             }
         }
+    }
+
+    override fun disable() {
+        command.unregister()
+    }
+
+    override fun enable() {
+        command.register()
     }
 }

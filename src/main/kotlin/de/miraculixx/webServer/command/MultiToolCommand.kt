@@ -11,10 +11,14 @@ import de.miraculixx.kpaper.localization.msgString
 import de.miraculixx.webServer.events.ToolEvent.key
 import de.miraculixx.webServer.events.ToolEvent.key2
 import de.miraculixx.webServer.events.ToolEvent.key3
+import de.miraculixx.webServer.interfaces.Module
 import de.miraculixx.webServer.utils.*
+import de.miraculixx.webServer.utils.extensions.command
+import de.miraculixx.webServer.utils.extensions.unregister
 import dev.jorel.commandapi.kotlindsl.*
 import dev.jorel.commandapi.wrappers.CommandResult
 import dev.jorel.commandapi.wrappers.Rotation
+import net.kyori.adventure.text.Component
 import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.entity.Entity
@@ -26,8 +30,8 @@ import kotlin.jvm.optionals.getOrNull
 val multiToolData: MutableMap<UUID, MultiToolCommand.MultiToolData> = mutableMapOf()
 val multiToolSelection: MutableMap<UUID, MutableMap<Entity, Any>> = mutableMapOf()
 
-class MultiToolCommand {
-    val command = commandTree("multitool") {
+class MultiToolCommand : Module {
+    private val command = command("multitool") {
         withPermission("buildertools.multitool")
 
         literalArgument("get") {
@@ -45,6 +49,7 @@ class MultiToolCommand {
                                         emptyComponent(),
                                         msgClickLeft + cmp(msgString("tool.multi.left")),
                                         msgShiftClickLeft + cmp(msgString("tool.multi.leftSneak")),
+                                        Component.keybind("key.swapOffhand").color(cHighlight) + cmp(" ≫ ") + cmp(msgString("tool.multi.offhand")),
                                         emptyComponent(),
                                         cmp(msgString("tool.multi.infoMode")),
                                         cmp("• " + msgString("tool.multi.infoMove"), cHighlight, underlined = true),
@@ -137,6 +142,14 @@ class MultiToolCommand {
                 }
             }
         }
+    }
+
+    override fun disable() {
+        command.unregister()
+    }
+
+    override fun enable() {
+        command.register()
     }
 
     data class MultiToolData(

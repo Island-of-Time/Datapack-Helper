@@ -12,9 +12,13 @@ import de.miraculixx.kpaper.localization.msgString
 import de.miraculixx.kpaper.runnables.sync
 import de.miraculixx.kpaper.runnables.task
 import de.miraculixx.kpaper.runnables.taskRunLater
+import de.miraculixx.webServer.interfaces.Module
 import de.miraculixx.webServer.interfaces.Reloadable
 import de.miraculixx.webServer.utils.*
 import de.miraculixx.webServer.utils.SettingsManager.pathingFolder
+import de.miraculixx.webServer.utils.SettingsManager.scoreboard
+import de.miraculixx.webServer.utils.extensions.command
+import de.miraculixx.webServer.utils.extensions.unregister
 import dev.jorel.commandapi.kotlindsl.*
 import dev.jorel.commandapi.wrappers.CommandResult
 import dev.jorel.commandapi.wrappers.Rotation
@@ -25,7 +29,6 @@ import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import net.kyori.adventure.audience.Audience
 import org.bukkit.Bukkit
 import org.bukkit.Location
 import org.bukkit.entity.Entity
@@ -39,14 +42,16 @@ import kotlin.math.abs
 import kotlin.math.atan2
 import kotlin.time.Duration.Companion.milliseconds
 
-class PathingCommand : Reloadable {
+class PathingCommand : Reloadable, Module {
     private val creators: MutableMap<UUID, PathingData> = mutableMapOf()
-    private var dataPackFolder = File("world/datapacks/${pathingFolder}/data/animation/functions")
+    private lateinit var dataPackFolder: File
+    private lateinit var packMetaFile: File
+    private lateinit var functionFolder: File
     private val format = DecimalFormat("#").apply { maximumFractionDigits = 4 }
     private val headerFile = File(SettingsManager.settingsFolder, "header/pathing.txt")
     private var header = SettingsManager.saveReadFile(headerFile, "header/${headerFile.name}")
 
-    val command = commandTree("pathing") {
+    private val command = command("pathing") {
         withPermission("buildertools.pathing")
 
         literalArgument("new") {
@@ -188,10 +193,10 @@ class PathingCommand : Reloadable {
             textArgument("name") {
                 playerExecutor { player, args ->
                     val name = args[0] as String
-                    val file = File(dataPackFolder, "$name.mcfunction")
+                    val file = File(functionFolder, "$name.mcfunction")
                     if (!file.parentFile.exists()) file.parentFile.mkdirs()
                     val data = creators[player.uniqueId] ?: return@playerExecutor
-                    File(dataPackFolder, "$name.json").writeText(json.encodeToString(PathingJsonData(data.rawTarget, data.actions)))
+                    File(functionFolder, "$name.json").writeText(json.encodeToString(PathingJsonData(data.rawTarget, data.actions)))
 
                     printToFunction(data.actions, data.rawTarget, file, name)
                     Bukkit.reloadData()
@@ -205,14 +210,14 @@ class PathingCommand : Reloadable {
             textArgument("name") {
                 anyExecutor { sender, args ->
                     val name = args[0] as String
-                    val file = File(dataPackFolder, "${name.removeSuffix(".json")}.json")
+                    val file = File(functionFolder, "${name.removeSuffix(".json")}.json")
                     if (!file.exists()) {
                         sender.sendMessage(prefix + cmp(msgString("common.fileNotFound"), cError))
                         return@anyExecutor
                     }
                     val data = json.decodeFromString<PathingJsonData>(file.readText())
 
-                    printToFunction(data.actions, data.target, File(dataPackFolder, "$name.mcfunction"), name)
+                    printToFunction(data.actions, data.target, File(functionFolder, "$name.mcfunction"), name)
                     Bukkit.reloadData()
                     sender.sendMessage(prefix + msg("command.pathing.reprinted", listOf(name)))
                     sender.sendMessage(prefix + msg("command.pathing.clickToPlay").addCommand("/function animation:$name.mcfunction"))
@@ -224,7 +229,7 @@ class PathingCommand : Reloadable {
             textArgument("name") {
                 playerExecutor { sender, args ->
                     val name = args[0] as String
-                    val file = File(dataPackFolder, "${name.removeSuffix(".json")}.json")
+                    val file = File(functionFolder, "${name.removeSuffix(".json")}.json")
                     if (!file.exists()) {
                         sender.sendMessage(prefix + cmp(msgString("common.fileNotFound"), cError))
                         return@playerExecutor
@@ -242,10 +247,11 @@ class PathingCommand : Reloadable {
     private fun printToFunction(data: List<PathingAction>, target: String, file: File, name: String) {
         val uuid = UUID.randomUUID()
         val content = buildString {
-            append(header
-                .replace("<points>", data.filter { it.type == PathingType.CONTROL_POINT }.size.toString())
-                .replace("<scripts>", data.filter { it.type == PathingType.RUN_SCRIPT }.size.toString())
-                .replace("<target>", target)
+            append(
+                header
+                    .replace("<points>", data.filter { it.type == PathingType.CONTROL_POINT }.size.toString())
+                    .replace("<scripts>", data.filter { it.type == PathingType.RUN_SCRIPT }.size.toString())
+                    .replace("<target>", target)
             )
 
             var counter = 1
@@ -257,16 +263,16 @@ class PathingCommand : Reloadable {
                         val lastCurrent = lastPoint ?: current
                         val animationData = animateFromTo(lastCurrent, current, action.time!!)
                         append(
-                            "\nexecute if score $uuid text-ticker matches $counter as $target at @s run tp @s ${lastCurrent.x.format()} ${lastCurrent.y.format()} ${lastCurrent.z.format()} " +
+                            "\nexecute if score $uuid $scoreboard matches $counter as $target at @s run tp @s ${lastCurrent.x.format()} ${lastCurrent.y.format()} ${lastCurrent.z.format()} " +
                                     "${lastCurrent.yaw.format()} ${lastCurrent.pitch.format()}"
                         )
                         val relativeMovement = animationData.first.firstOrNull()
                         val counterTo = counter + animationData.first.size
                         if (relativeMovement != null)
-                            append("\nexecute if score $uuid text-ticker matches $counter..$counterTo as $target at @s run tp @s ~${relativeMovement.x.format()} ~${relativeMovement.y.format()} ~${relativeMovement.z.format()} ${relativeMovement.yaw.format()} ~")
+                            append("\nexecute if score $uuid $scoreboard matches $counter..$counterTo as $target at @s run tp @s ~${relativeMovement.x.format()} ~${relativeMovement.y.format()} ~${relativeMovement.z.format()} ${relativeMovement.yaw.format()} ~")
                         counter = counterTo
                         val finalLoc = animationData.second
-                        append("\nexecute if score $uuid text-ticker matches $counter as $target at @s run tp @s ${finalLoc.x.format()} ${finalLoc.y.format()} ${finalLoc.z.format()} ${finalLoc.yaw.format()} ${finalLoc.pitch.format()}")
+                        append("\nexecute if score $uuid $scoreboard matches $counter as $target at @s run tp @s ${finalLoc.x.format()} ${finalLoc.y.format()} ${finalLoc.z.format()} ${finalLoc.yaw.format()} ${finalLoc.pitch.format()}")
                         lastPoint = current
                         counter++
                     }
@@ -274,13 +280,13 @@ class PathingCommand : Reloadable {
                     PathingType.DELAY -> counter += action.time?.toInt() ?: 0
 
                     PathingType.RUN_SCRIPT -> {
-                        append("\nexecute if score $uuid text-ticker matches $counter as $target at @s run ${action.script}")
+                        append("\nexecute if score $uuid $scoreboard matches $counter as $target at @s run ${action.script}")
                         counter++
                     }
 
                     PathingType.REPEAT -> {
                         val amount = action.time?.toInt() ?: 1
-                        append("\nexecute if score $uuid text-ticker matches $counter..${counter + amount - 1} as $target at @s run ${action.script}")
+                        append("\nexecute if score $uuid $scoreboard matches $counter..${counter + amount - 1} as $target at @s run ${action.script}")
                         counter += amount
                     }
                 }
@@ -288,9 +294,9 @@ class PathingCommand : Reloadable {
 
             append(
                 "\n\n# Looping & Reset\n" +
-                        "scoreboard players add $uuid text-ticker 1\n" +
-                        "execute if score $uuid text-ticker matches ..$counter run schedule function animation:$name 1t replace\n" +
-                        "execute if score $uuid text-ticker matches ${counter + 1}.. run scoreboard players set $uuid text-ticker 0"
+                        "scoreboard players add $uuid $scoreboard 1\n" +
+                        "execute if score $uuid $scoreboard matches ..$counter run schedule function animation:$name 1t replace\n" +
+                        "execute if score $uuid $scoreboard matches ${counter + 1}.. run scoreboard players set $uuid $scoreboard 0"
             )
         }
 
@@ -365,8 +371,18 @@ class PathingCommand : Reloadable {
     private fun Number.format() = format.format(this)
 
     override fun reload() {
-        dataPackFolder = File("world/datapacks/${pathingFolder}/data/animation/functions")
+        dataPackFolder = File("${worlds.first().name}/datapacks/${pathingFolder}")
+        packMetaFile = File(dataPackFolder, "pack.mcmeta")
+        functionFolder = File(dataPackFolder, "data/pathing/functions")
         header = SettingsManager.saveReadFile(headerFile, "header/${headerFile.name}")
+    }
+
+    override fun disable() {
+        command.unregister()
+    }
+
+    override fun enable() {
+        command.register()
     }
 
     @Serializable
