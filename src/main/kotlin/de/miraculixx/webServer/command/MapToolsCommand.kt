@@ -1,5 +1,6 @@
 package de.miraculixx.webServer.command
 
+import de.miraculixx.kpaper.chat.sendMessage
 import de.miraculixx.kpaper.extensions.bukkit.addUrl
 import de.miraculixx.kpaper.extensions.kotlin.enumOf
 import de.miraculixx.kpaper.localization.msg

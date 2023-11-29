@@ -25,7 +25,7 @@ object LocationSerializer : KSerializer<Location> {
     }
 
     override fun serialize(encoder: Encoder, value: Location) {
-        encoder.encodeString(Json.encodeToString(DummyLocation(value.world.name, value.x, value.y, value.z, value.yaw, value.pitch)))
+        encoder.encodeString(Json.encodeToString(DummyLocation(value.world!!.name, value.x, value.y, value.z, value.yaw, value.pitch)))
     }
 
     @Serializable

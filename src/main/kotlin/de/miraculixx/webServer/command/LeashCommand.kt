@@ -9,8 +9,10 @@ import de.miraculixx.webServer.events.LeashEvent
 import de.miraculixx.webServer.interfaces.Module
 import de.miraculixx.webServer.utils.extensions.command
 import de.miraculixx.webServer.utils.extensions.unregister
+import de.miraculixx.webServer.utils.getNearbyEntitiesByType
 import de.miraculixx.webServer.utils.plus
 import de.miraculixx.webServer.utils.prefix
+import de.miraculixx.webServer.utils.sendMessage
 import dev.jorel.commandapi.arguments.LocationType
 import dev.jorel.commandapi.kotlindsl.locationArgument
 import dev.jorel.commandapi.kotlindsl.playerExecutor
@@ -34,7 +36,7 @@ class LeashCommand : Module {
                     val pos1 = args[0] as Location
                     val pos2 = args[1] as Location
 
-                    val parrot = pos1.world.spawnEntity(pos1.clone().add(.5, 0.3, .3), EntityType.PARROT) as Parrot
+                    val parrot = pos1.world!!.spawnEntity(pos1.clone().add(.5, 0.3, .3), EntityType.PARROT) as Parrot
                     parrot.setLeashHolder(player)
                     parrot.setAI(false)
                     parrot.setGravity(false)
@@ -45,7 +47,7 @@ class LeashCommand : Module {
 
                     // Starting point
                     if (pos1.getNearbyEntitiesByType(LeashHitch::class.java, 1.0).isEmpty()) {
-                        pos1.world.spawnEntity(pos1, EntityType.LEASH_HITCH) as LeashHitch
+                        pos1.world!!.spawnEntity(pos1, EntityType.LEASH_HITCH) as LeashHitch
                         spawnInteraction(pos1)
                     }
 
@@ -53,7 +55,7 @@ class LeashCommand : Module {
                     val targetEntities = pos2.getNearbyEntitiesByType(LeashHitch::class.java, 1.0)
                     val target = if (targetEntities.isEmpty()) {
                         spawnInteraction(pos2)
-                        pos2.world.spawnEntity(pos2, EntityType.LEASH_HITCH) as LeashHitch
+                        pos2.world!!.spawnEntity(pos2, EntityType.LEASH_HITCH) as LeashHitch
                     } else targetEntities.first()
                     parrot.setLeashHolder(target)
                     player.sendMessage(prefix + msg("command.leash.spawn"))
@@ -63,7 +65,7 @@ class LeashCommand : Module {
     }
 
     private fun spawnInteraction(location: Location) {
-        val interaction = location.world.spawnEntity(location.add(0.5, 0.3, 0.5), EntityType.INTERACTION) as Interaction
+        val interaction = location.world!!.spawnEntity(location.add(0.5, 0.3, 0.5), EntityType.INTERACTION) as Interaction
         interaction.interactionHeight = 0.6f
         interaction.interactionWidth = 0.45f
     }

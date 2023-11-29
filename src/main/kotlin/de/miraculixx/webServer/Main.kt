@@ -12,6 +12,9 @@ import de.miraculixx.webServer.utils.consoleSender
 import de.miraculixx.webServer.utils.prefix
 import dev.jorel.commandapi.CommandAPI
 import dev.jorel.commandapi.CommandAPIBukkitConfig
+import net.kyori.adventure.audience.Audience
+import net.kyori.adventure.text.Component
+import net.kyori.adventure.text.format.NamedTextColor
 
 class Main : KPaper() {
     companion object {
@@ -24,7 +27,7 @@ class Main : KPaper() {
         INSTANCE = this
         consoleSender = server.consoleSender
         CommandAPI.onLoad(CommandAPIBukkitConfig(this).silentLogs(true))
-        KPaperConfiguration.Text.prefix = prefix
+        KPaperConfiguration.Text.prefix = Component.text("MapTools >> ").color(NamedTextColor.BLUE)
     }
 
     override fun startup() {

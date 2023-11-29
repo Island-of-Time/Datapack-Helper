@@ -1,5 +1,6 @@
 package de.miraculixx.webServer.command
 
+import de.miraculixx.kpaper.chat.sendMessage
 import de.miraculixx.kpaper.event.listen
 import de.miraculixx.kpaper.event.register
 import de.miraculixx.kpaper.event.unregister

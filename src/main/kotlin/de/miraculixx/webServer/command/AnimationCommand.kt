@@ -18,6 +18,7 @@ import de.miraculixx.webServer.utils.extensions.command
 import de.miraculixx.webServer.utils.extensions.unregister
 import de.miraculixx.webServer.utils.plus
 import de.miraculixx.webServer.utils.prefix
+import de.miraculixx.webServer.utils.sendMessage
 import dev.jorel.commandapi.kotlindsl.*
 import org.bukkit.Bukkit
 import org.bukkit.Location

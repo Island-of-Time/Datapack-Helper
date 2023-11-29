@@ -2,6 +2,7 @@
 
 package de.miraculixx.webServer.command
 
+import de.miraculixx.kpaper.chat.sendMessage
 import de.miraculixx.kpaper.items.customModel
 import de.miraculixx.kpaper.items.itemStack
 import de.miraculixx.kpaper.items.meta
@@ -37,7 +38,7 @@ class HitBoxCommand : Module {
                             val tag = args.getOptional(1).getOrNull() as? String
                             val size = args.getOptional(2).getOrNull() as? Float
                             val sizeD = size?.toDouble()
-                            val e = loc.world.spawn(loc.add(.5, (sizeD ?: 0.01) / 2, .5), Interaction::class.java)
+                            val e = loc.world!!.spawn(loc.add(.5, (sizeD ?: 0.01) / 2, .5), Interaction::class.java)
                             tag?.let { e.scoreboardTags.add(it) }
                             e.interactionWidth = size ?: 1.01f
                             e.interactionHeight = size ?: 1.01f

@@ -93,7 +93,7 @@ class MultiToolCommand : Module {
             locationArgument("vector") {
                 playerExecutor { player, args ->
                     val vector = (args[0] as Location).toVector()
-                    multiToolSelection[player.uniqueId]?.forEach { (e, _) -> e.teleportAsync(e.location.add(vector)) }
+                    multiToolSelection[player.uniqueId]?.forEach { (e, _) -> e.teleport(e.location.add(vector)) }
                     player.sendMessage(prefix + msg("command.multi.moved", listOf(vector.toString())))
                 }
             }
@@ -104,7 +104,7 @@ class MultiToolCommand : Module {
                 playerExecutor { player, args ->
                     val rotation = args[0] as Rotation
                     multiToolSelection[player.uniqueId]?.forEach { (e, _) ->
-                        e.teleportAsync(e.location.apply {
+                        e.teleport(e.location.apply {
                             yaw += rotation.normalizedYaw
                             pitch += rotation.normalizedPitch
                         })

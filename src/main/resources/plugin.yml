@@ -16,4 +16,10 @@ libraries:
   - "dev.jorel:commandapi-bukkit-shade:9.2.0"
   - "commons-codec:commons-codec:1.15"
   - "org.zeroturnaround:zt-zip:1.15"
+  - "net.kyori:adventure-api:4.13.1"
+  - "net.kyori:adventure-text-minimessage:4.13.1"
+  - "net.kyori:adventure-text-serializer-plain:4.13.1"
+  - "net.kyori:adventure-text-serializer-gson:4.13.1"
+  - "net.kyori:adventure-text-serializer-legacy:4.13.1"
+  - "de.miraculixx:kpaper:1.1.1"
 

@@ -2,13 +2,17 @@ package de.miraculixx.webServer.utils
 
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.text.Component
-import net.kyori.adventure.text.event.ClickEvent
-import net.kyori.adventure.text.event.HoverEvent
 import net.kyori.adventure.text.format.TextColor
 import net.kyori.adventure.text.format.TextDecoration
 import net.kyori.adventure.text.minimessage.MiniMessage
 import net.kyori.adventure.text.serializer.gson.GsonComponentSerializer
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer
 import net.kyori.adventure.title.Title
+import org.bukkit.Location
+import org.bukkit.command.ConsoleCommandSender
+import org.bukkit.entity.Entity
+import org.bukkit.entity.Player
+import org.bukkit.inventory.meta.ItemMeta
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 import kotlin.time.toJavaDuration
@@ -49,17 +53,6 @@ fun Component.addHover(display: Component): Component {
     return hoverEvent(asHoverEvent().value(display))
 }
 
-fun commandSuggestions(prefix: String, vararg commands: String): Component {
-    val base = cmp("")
-    commands.forEachIndexed { index, s ->
-        base + cmp(s, cHighlight)
-            .clickEvent(ClickEvent.suggestCommand("$prefix $s"))
-            .hoverEvent(HoverEvent.showText(cmp("Click to run command\n") + cmp("$prefix $s", cHighlight)))
-        if (index != commands.size - 1) base + cmp(" - ")
-    }
-    return base
-}
-
 operator fun Component.plus(other: Component): Component {
     return append(other)
 }
@@ -67,3 +60,31 @@ operator fun Component.plus(other: Component): Component {
 fun Audience.title(main: Component, sub: Component, fadeIn: Duration = Duration.ZERO, stay: Duration = 5.seconds, fadeOut: Duration = Duration.ZERO) {
     showTitle(Title.title(main, sub, Title.Times.times(fadeIn.toJavaDuration(), stay.toJavaDuration(), fadeOut.toJavaDuration())))
 }
+
+
+// Spigot fixes, because their API sucks
+val legacySerializer = LegacyComponentSerializer.builder()
+    .character('§')
+    .hexColors()
+    .useUnusualXRepeatedCharacterHexFormat()
+    .build()
+
+fun Component.native() = legacySerializer.serialize(this)
+fun List<Component>.native() = map { legacySerializer.serialize(it) }
+fun ConsoleCommandSender.sendMessage(cmp: Component) {
+    sendMessage(cmp.native())
+}
+fun Player.sendMessage(cmp: Component) {
+    sendMessage(cmp.native())
+}
+fun ItemMeta.lore(list: List<Component>) {
+    lore = list.native()
+}
+var ItemMeta.name: Component
+    get() = Component.text(this.displayName)
+    set(cmp) = this.setDisplayName(cmp.native())
+fun String.append(string: String) = this + string
+inline fun <reified T : Entity?> Location.getNearbyEntitiesByType(clazz: Class<out T>?, radius: Double): Collection<T>
+    = world!!.getNearbyEntities(this, radius, radius, radius).filterIsInstance<T>()
+fun Location.getNearbyEntities(x: Double, y: Double, z: Double): Collection<Entity>
+    = world!!.getNearbyEntities(this, x, y, z)

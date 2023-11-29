@@ -2,6 +2,7 @@
 
 package de.miraculixx.webServer.command
 
+import de.miraculixx.kpaper.chat.sendMessage
 import de.miraculixx.kpaper.extensions.bukkit.addCommand
 import de.miraculixx.kpaper.extensions.console
 import de.miraculixx.kpaper.extensions.geometry.toSimpleBlockString

@@ -3,8 +3,6 @@ import java.net.URI
 plugins {
     kotlin("jvm") version "1.9.20"
     kotlin("plugin.serialization") version "1.9.20"
-    id("io.papermc.paperweight.userdev") version "1.5.10"
-    id("xyz.jpenilla.run-paper") version "2.2.2"
     id("com.github.johnrengelman.shadow") version "7.1.2"
 }
 
@@ -14,15 +12,14 @@ version = "1.0.0"
 
 repositories {
     mavenCentral()
-    maven {
-        url = URI("https://repo.codemc.io/repository/maven-snapshots")
-        name = "codemc-snapshots"
-    }
-    maven { url = URI("https://s01.oss.sonatype.org/content/repositories/snapshots") }
+    mavenLocal()
+    maven("https://repo.codemc.org/repository/maven-public/")
+    maven("https://hub.spigotmc.org/nexus/content/repositories/snapshots/")
+    maven("https://oss.sonatype.org/content/repositories/central")
 }
 
 dependencies {
-    paperweight.paperDevBundle("1.20.2-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot:1.20.2-R0.1-SNAPSHOT")
     compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
     compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta")
     compileOnly("org.zeroturnaround:zt-zip:1.15")
@@ -34,13 +31,19 @@ dependencies {
     compileOnly("de.miraculixx:kpaper:1.1.1")
     compileOnly("de.miraculixx:mweb:1.1.0")
 
+    val adventureVersion = "4.13.1"
+    compileOnly("net.kyori:adventure-api:$adventureVersion")
+    compileOnly("net.kyori:adventure-text-minimessage:$adventureVersion")
+    compileOnly("net.kyori:adventure-text-serializer-plain:$adventureVersion")
+    compileOnly("net.kyori:adventure-text-serializer-gson:$adventureVersion")
+    compileOnly("net.kyori:adventure-text-serializer-legacy:$adventureVersion")
+
     implementation("de.miraculixx:kpaper:1.1.1")
 }
 
 tasks {
     assemble {
         dependsOn(shadowJar)
-        dependsOn(reobfJar)
     }
     compileJava {
         options.encoding = "UTF-8"

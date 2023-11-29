@@ -18,6 +18,7 @@ import org.bukkit.Bukkit
 import org.bukkit.Material
 import org.bukkit.scoreboard.Criteria
 import java.io.File
+import de.miraculixx.webServer.utils.sendMessage
 
 object SettingsManager {
     val settingsFolder = File("plugins/MUtils/BuilderTools").apply { if (!exists()) mkdirs() }
@@ -124,8 +125,8 @@ object SettingsManager {
         highlightPinkGlass = config.getBoolean("show-pink-glass")
 
         scoreboard = config.get<String>("tick-scoreboard") ?: "maptools.tick"
-        val scoreboardManager = Bukkit.getScoreboardManager().mainScoreboard
-        scoreboardManager.getObjective(scoreboard) ?: scoreboardManager.registerNewObjective(scoreboard, Criteria.DUMMY, cmp("MapTools Ticker", cHighlight))
+        val scoreboardManager = Bukkit.getScoreboardManager()!!.mainScoreboard
+        scoreboardManager.getObjective(scoreboard) ?: scoreboardManager.registerNewObjective(scoreboard, Criteria.DUMMY, cmp("MapTools Ticker", cHighlight).native())
 
         reloadable.forEach { rl -> rl.reload() }
     }

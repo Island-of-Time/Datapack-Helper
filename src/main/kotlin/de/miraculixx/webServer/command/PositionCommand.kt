@@ -1,5 +1,6 @@
 package de.miraculixx.webServer.command
 
+import de.miraculixx.kpaper.chat.sendMessage
 import de.miraculixx.kpaper.extensions.console
 import de.miraculixx.kpaper.localization.msg
 import de.miraculixx.webServer.interfaces.DataHolder
@@ -58,7 +59,7 @@ class WarpCommand : Reloadable, DataHolder, Module {
                 playerExecutor { player, args ->
                     val name = args[0] as String
                     val location = player.location
-                    val liteLoc = LiteLocation(location.blockX, location.blockY, location.blockZ, location.world.name)
+                    val liteLoc = LiteLocation(location.blockX, location.blockY, location.blockZ, location.world!!.name)
                     positions[name] = liteLoc
                     player.sendMessage(prefix + msg("command.position.created", listOf(name, liteLoc.toString())))
                 }

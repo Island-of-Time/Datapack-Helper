@@ -3,6 +3,7 @@ package de.miraculixx.webServer.utils
 import net.kyori.adventure.audience.Audience
 import net.kyori.adventure.key.Key
 import net.kyori.adventure.sound.Sound
+import org.bukkit.entity.Player
 
 
 fun Audience.click() {
@@ -13,8 +14,8 @@ fun Audience.soundError() {
     playSound(Sound.sound(Key.key("entity.enderman.teleport"), Sound.Source.MASTER, 1f, 1.1f))
 }
 
-fun Audience.soundEnable() {
-    playSound(Sound.sound(Key.key("block.note_block.bell"), Sound.Source.MASTER, 1f, 1f))
+fun Player.soundEnable() {
+    playSound(this, org.bukkit.Sound.BLOCK_NOTE_BLOCK_BELL, 1f, 1f)
 }
 
 fun Audience.soundDisable() {
@@ -37,6 +38,6 @@ fun Audience.soundDown() {
     playSound(Sound.sound(Key.key("block.note_block.chime"), Sound.Source.MASTER, 1f, 0.5f))
 }
 
-fun Audience.soundPling() {
-    playSound(Sound.sound(Key.key("block.note_block.chime"), Sound.Source.MASTER, 1f, 0.5f))
+fun Player.soundPling() {
+    playSound(this, org.bukkit.Sound.BLOCK_NOTE_BLOCK_CHIME, 1f, 0.5f)
 }

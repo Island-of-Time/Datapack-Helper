@@ -5,6 +5,8 @@ package de.miraculixx.webServer.events
 import de.miraculixx.kpaper.event.listen
 import de.miraculixx.kpaper.extensions.bukkit.dispatchCommand
 import de.miraculixx.kpaper.extensions.console
+import de.miraculixx.kpaper.extensions.events.isLeftClick
+import de.miraculixx.kpaper.extensions.events.isRightClick
 import de.miraculixx.kpaper.extensions.geometry.add
 import de.miraculixx.kpaper.extensions.kotlin.enumOf
 import de.miraculixx.kpaper.extensions.onlinePlayers
@@ -24,7 +26,8 @@ import de.miraculixx.webServer.utils.SettingsManager.highlightSlabs
 import de.miraculixx.webServer.utils.SettingsManager.highlightStairs
 import de.miraculixx.webServer.utils.SettingsManager.highlightWalls
 import de.miraculixx.webServer.utils.data.Modules
-import de.miraculixx.webServer.utils.gui.logic.InventoryUtils.get
+import net.md_5.bungee.api.ChatMessageType
+import net.md_5.bungee.api.chat.TextComponent
 import org.bukkit.*
 import org.bukkit.block.BlockFace
 import org.bukkit.block.data.BlockData
@@ -67,11 +70,11 @@ object ToolEvent {
         val player = it.player
         val container = meta.persistentDataContainer
 
-        val commandTool = container.get(keyCommand)
+        val commandTool = container.get(keyCommand, PersistentDataType.STRING)
         if (commandTool != null) {
-            val loc = it.interactionPoint ?: player.location
+            val loc = it.clickedPosition ?: player.location.toVector()
             console.dispatchCommand("execute positioned ${loc.x} ${loc.y} ${loc.z} run $commandTool")
-            player.sendActionBar(cmp("Executed tool command", cSuccess))
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, *TextComponent.fromLegacyText(cmp("Executed tool command", cSuccess).native()))
             return@listen
         }
 
@@ -137,13 +140,13 @@ object ToolEvent {
                             }
                             val moveVector = container.get(key3, PersistentDataType.FLOAT) ?: 0.1f
                             val vector = facing.direction.multiply(if (player.isSneaking) moveVector * 2f else moveVector)
-                            multiData.forEach { (e, _) -> e.teleportAsync(e.location.add(vector)) }
+                            multiData.forEach { (e, _) -> e.teleport(e.location.add(vector)) }
                         }
 
                         MultiToolCommand.MultiToolMode.ROTATE -> {
                             val moveVector = (container.get(key3, PersistentDataType.FLOAT)?.times(10f)) ?: 1f
                             multiData.forEach { (e, _) ->
-                                e.teleportAsync(e.location.apply {
+                                e.teleport(e.location.apply {
                                     if (player.isSneaking) pitch = rotateLocking(pitch, moveVector)
                                     else yaw = rotateLocking(yaw, moveVector)
                                 })
@@ -161,7 +164,7 @@ object ToolEvent {
                 if (!SettingsManager.getModuleState(Modules.HIT_BOX)) return@listen
                 if (!player.hasPermission("buildertools.interaction-tool")) return@listen
                 val block = it.clickedBlock ?: return@listen
-                val tag = container.get(key)
+                val tag = container.get(key, PersistentDataType.STRING)
                 it.isCancelled = true
                 if (it.action.isRightClick) {
                     val hitbox = block.world.spawn(block.location.subtract(-.5, .005, -.5), Interaction::class.java)
@@ -187,7 +190,7 @@ object ToolEvent {
                 val isSneaking = player.isSneaking
                 val isLeft = it.action.isLeftClick
                 raycast(start, start.yaw - 90, start.pitch, 6) { loc ->
-                    loc.world.spawnParticle(Particle.COMPOSTER, loc, 1, .0, .0, .0, 0.1)
+                    loc.world!!.spawnParticle(Particle.COMPOSTER, loc, 1, .0, .0, .0, 0.1)
                     if (found) return@raycast
                     val targets = (if (filter != null) loc.getNearbyEntitiesByType(filter.entityClass, range)
                     else loc.getNearbyEntities(range, range, range)).filter { e -> e !is Player }
@@ -209,7 +212,7 @@ object ToolEvent {
 
     private val onSwap = listen<PlayerSwapHandItemsEvent> {
         val item = it.offHandItem
-        val meta = item.itemMeta ?: return@listen
+        val meta = item?.itemMeta ?: return@listen
         if (meta.customModel != 100) return@listen
         val player = it.player
 
@@ -253,7 +256,7 @@ object ToolEvent {
                 if (!player.hasPermission("buildertools.interaction-tool")) return@listen
                 val type = entity.type
                 if (type == EntityType.INTERACTION) return@listen
-                val tag = meta.persistentDataContainer.get(key)
+                val tag = meta.persistentDataContainer.get(key, PersistentDataType.STRING)
                 val interaction = entity.world.spawn(entity.location.subtract(.0, .01, .0), Interaction::class.java)
                 interaction.interactionWidth = entity.width.toFloat() + 0.02f
                 interaction.interactionHeight = entity.height.toFloat() + 0.02f
@@ -341,7 +344,7 @@ object ToolEvent {
                     (-5..5).forEach { x ->
                         (-5..5).forEach { y ->
                             (-5..5).forEach { z ->
-                                val b = source.world.getBlockAt(source.clone().add(x, y, z))
+                                val b = source.world!!.getBlockAt(source.clone().add(x, y, z))
                                 if (b.type == Material.PINK_STAINED_GLASS_PANE)
                                     p.spawnParticle(Particle.BLOCK_MARKER, b.location.add(.5, .5, .5), 1, display)
                             }
@@ -371,7 +374,7 @@ object ToolEvent {
         targets.forEach { e ->
             e.scoreboardTags.removeAll(tags)
             sendMessage(
-                prefix + (cmp("Removed tags from ") + e.name().color(cHighlight) + cmp(" (Hover for info)"))
+                prefix + (cmp("Removed tags from ") + cmp(e.name, cHighlight))
                     .addHover(cmp("Removed Tags:\n", cMark) + cmp(tags.stringify()) + cmp("\n\nRemaining Tags:\n", cMark) + cmp(e.scoreboardTags.stringify()))
             )
         }
@@ -382,8 +385,8 @@ object ToolEvent {
             targets.forEach { e ->
                 val contains = e.scoreboardTags.containsAll(tags)
                 sendMessage(
-                    prefix + (cmp("Entity ") + e.name().color(cHighlight) +
-                            (if (contains) cmp(" has", cSuccess) else cmp(" has not", cError)) + cmp(" all tags (Hover for info)"))
+                    prefix + (cmp("Entity ") + cmp(e.name, cHighlight) +
+                            (if (contains) cmp(" has", cSuccess) else cmp(" has not", cError)) + cmp(" all tags"))
                         .addHover(cmp("All entity tags:\n", cMark) + cmp(e.scoreboardTags.stringify()))
                 )
             }
@@ -393,14 +396,14 @@ object ToolEvent {
                 val missing = tags.toMutableSet().apply { removeAll(e.scoreboardTags) }
                 if (missing.isEmpty()) {
                     sendMessage(
-                        prefix + (cmp("Entity ") + e.name().color(cHighlight) + cmp(" has all tags (Hover for info)"))
+                        prefix + (cmp("Entity ") + cmp(e.name, cHighlight) + cmp(" has all tags"))
                             .addHover(cmp("All entity tags:\n", cMark) + cmp(e.scoreboardTags.stringify()))
                     )
                     return
                 }
                 e.scoreboardTags.addAll(tags)
                 sendMessage(
-                    prefix + (cmp("Applied all tags to entity ") + e.name().color(cHighlight) + cmp(" (Hover for info)"))
+                    prefix + (cmp("Applied all tags to entity ") + cmp(e.name, cHighlight) + cmp(" (Hover for info)"))
                         .addHover(cmp("Tags before:\n", cMark) + cmp(before.stringify()) + cmp("\nCurrent tags:", cMark) + cmp(e.scoreboardTags.stringify()))
                 )
             }
@@ -423,13 +426,13 @@ object ToolEvent {
             multiData.clear()
         } else {
             //Select
-            val typeString = meta.persistentDataContainer.get(key) ?: return
+            val typeString = meta.persistentDataContainer.get(key, PersistentDataType.STRING) ?: return
             val radius = meta.persistentDataContainer.get(key2, PersistentDataType.FLOAT) ?: return
             val type = enumOf<EntityType>(typeString) ?: return
             val start = player.location.add(0.0, 1.5, 0.0)
             if (type == EntityType.BLOCK_DISPLAY) {
                 raycast(start, start.yaw - 90, start.pitch, multiSettings.range) { loc ->
-                    loc.world.spawnParticle(Particle.COMPOSTER, loc, 1, .0, .0, .0, 0.1)
+                    loc.world!!.spawnParticle(Particle.COMPOSTER, loc, 1, .0, .0, .0, 0.1)
                     val vec = Vector(loc.x, loc.y, loc.z)
                     loc.getNearbyEntitiesByType(BlockDisplay::class.java, 3.0).forEach { bd ->
                         if (multiData.contains(bd)) return@forEach
@@ -492,7 +495,7 @@ object ToolEvent {
                 }
             } else {
                 raycast(start, start.yaw - 90, start.pitch, multiSettings.range) { loc ->
-                    loc.world.spawnParticle(Particle.COMPOSTER, loc, 1, .0, .0, .0, 0.1)
+                    loc.world!!.spawnParticle(Particle.COMPOSTER, loc, 1, .0, .0, .0, 0.1)
                     loc.getNearbyEntitiesByType(type.entityClass, radius.toDouble()).forEach { e ->
                         if (e is LivingEntity) e.isGlowing = true
                         multiData[e] = false

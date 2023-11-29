@@ -43,20 +43,20 @@ class ConvertBlockCommand: Module {
 
                             val offset = (1.0 - scale) / 2
                             if (origin != null) {
-                                val bd = pos.world.spawnEntity(origin.add(offset + 0.5, offset + 0.5, offset + 0.5), EntityType.BLOCK_DISPLAY) as BlockDisplay
+                                val bd = pos.world!!.spawnEntity(origin.add(offset + 0.5, offset + 0.5, offset + 0.5), EntityType.BLOCK_DISPLAY) as BlockDisplay
                                 bd.block = pos.block.blockData
                                 bd.scoreboardTags.add(tag)
                                 val center = Vector3f((pos.x - origin.x).toFloat(), (pos.y - origin.y).toFloat(), (pos.z - origin.z).toFloat())
                                 bd.transformation = Transformation(center, Quaternionf(0f, 0f, 0f, 1f), Vector3f(scale, scale, scale), Quaternionf(0f, 0f, 0f, 1f))
 
                             } else {
-                                val bd = pos.world.spawnEntity(pos.clone().add(offset, offset, offset), EntityType.BLOCK_DISPLAY) as BlockDisplay
+                                val bd = pos.world!!.spawnEntity(pos.clone().add(offset, offset, offset), EntityType.BLOCK_DISPLAY) as BlockDisplay
                                 bd.block = pos.block.blockData
                                 bd.scoreboardTags.add(tag)
                                 bd.transformation = Transformation(Vector3f(0f, 0f, 0f), Quaternionf(0f, 0f, 0f, 1f), Vector3f(scale, scale, scale), Quaternionf(0f, 0f, 0f, 1f))
                             }
 
-                            val type = pos.block.type.translationKey()
+                            val type = pos.block.type.translationKey
                             pos.block.type = Material.AIR
                             player.sendMessage(prefix + msg("command.blockConverter.convert", listOf(type)))
                         }

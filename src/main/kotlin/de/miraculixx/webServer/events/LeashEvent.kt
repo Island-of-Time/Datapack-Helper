@@ -2,6 +2,7 @@ package de.miraculixx.webServer.events
 
 import de.miraculixx.kpaper.event.listen
 import de.miraculixx.kpaper.runnables.taskRunLater
+import de.miraculixx.webServer.utils.getNearbyEntities
 import org.bukkit.Material
 import org.bukkit.Tag
 import org.bukkit.entity.EntityType
@@ -23,7 +24,7 @@ class LeashEvent {
             val nearby = loc.getNearbyEntities(1.0, 1.0, 1.0).map { e -> e.type }
             if (nearby.contains(EntityType.LEASH_HITCH)) {
                 if (nearby.contains(EntityType.INTERACTION)) return@taskRunLater
-                val interaction = loc.world.spawnEntity(loc.add(0.5, 0.3, 0.5), EntityType.INTERACTION) as Interaction
+                val interaction = loc.world!!.spawnEntity(loc.add(0.5, 0.3, 0.5), EntityType.INTERACTION) as Interaction
                 interaction.interactionHeight = 0.6f
                 interaction.interactionWidth = 0.45f
             }
@@ -34,7 +35,7 @@ class LeashEvent {
 
         it.isCancelled = true
 
-        val parrot = loc.world.spawnEntity(loc.add(.5, 0.3, .3), EntityType.PARROT) as Parrot
+        val parrot = loc.world!!.spawnEntity(loc.add(.5, 0.3, .3), EntityType.PARROT) as Parrot
         parrot.setLeashHolder(player)
         parrot.setAI(false)
         parrot.setGravity(false)
