@@ -29,6 +29,8 @@ class QuestBookCommand : Module {
     private val darkGray = TextColor.fromHexString("#4F4F4F")!!
 
     val command = command("quest-book") {
+        withPermission("maptools.quest-book")
+
         integerArgument("chapter") {
             integerArgument("quests") {
                 anyExecutor { sender, args ->

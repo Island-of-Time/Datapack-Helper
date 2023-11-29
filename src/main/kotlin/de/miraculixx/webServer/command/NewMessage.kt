@@ -37,7 +37,7 @@ class NewMessage : Reloadable, Module {
     private var headerRedirect = SettingsManager.saveReadFile(headerFile, "header/${headerRedirectFile.name}")
 
     private val command = command("message") {
-        withPermission("buildertools.message")
+        withPermission("maptools.message")
 
         literalArgument("new") {
             textArgument("prefix") {

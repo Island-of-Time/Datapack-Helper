@@ -37,7 +37,7 @@ class AnimationCommand : Reloadable, Module {
 
     @Suppress("unused")
     private val command = command("animation") {
-        withPermission("buildertools.animation")
+        withPermission("maptools.animation")
 
         literalArgument("new") {
             playerExecutor { player, _ ->

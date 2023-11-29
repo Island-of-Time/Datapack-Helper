@@ -27,7 +27,7 @@ import kotlin.jvm.optionals.getOrNull
 class HitBoxCommand : Module {
     val command = command("interaction") {
         literalArgument("spawn") {
-            withPermission("buildertools.interaction")
+            withPermission("maptools.interaction")
 
             locationArgument("block", LocationType.BLOCK_POSITION) {
                 stringArgument("tag", optional = true) {
@@ -71,7 +71,7 @@ class HitBoxCommand : Module {
         }
 
         literalArgument("tool") {
-            withPermission("buildertools.interaction-tool")
+            withPermission("maptools.interaction-tool")
 
             stringArgument("tag") {
                 playerExecutor { player, args ->

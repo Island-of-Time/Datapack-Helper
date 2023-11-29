@@ -32,7 +32,7 @@ class MapToolsCommand {
         }
 
         literalArgument("modules") {
-            withPermission("buildertools.maptools")
+            withPermission("maptools.maptools")
             stringArgument("module") {
                 replaceSuggestions(ArgumentSuggestions.stringsWithTooltipsCollection { Modules.entries.map { StringTooltip.ofString(it.name, msgString("info.${it.name}.desc")) } })
                 anyExecutor { sender, args ->
@@ -76,7 +76,7 @@ class MapToolsCommand {
         }
 
         literalArgument("config") {
-            withPermission("buildertools.maptools")
+            withPermission("maptools.maptools")
             literalArgument("reload") {
                 anyExecutor { sender, _ ->
                     SettingsManager.reload()
@@ -92,7 +92,7 @@ class MapToolsCommand {
         }
 
         literalArgument("language") {
-            withPermission("buildertools.maptools")
+            withPermission("maptools.maptools")
             anyExecutor { sender, _ ->
                 sender.sendMessage(prefix + cmp("Current language: ${SettingsManager.pluginSettings.language}"))
             }

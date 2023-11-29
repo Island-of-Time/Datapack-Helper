@@ -34,9 +34,9 @@ class WarpCommand : Reloadable, DataHolder, Module {
     }
 
     private val command = command("position") {
-        withPermission("mutils.position")
-
+        withPermission("maptools.position")
         withAliases("pos", "location", "loc")
+
         literalArgument("tp") {
             argument(StringArgument("name").replaceSuggestions(ArgumentSuggestions.stringsWithTooltips { getPositionNames() })) {
                 playerExecutor { player, args ->
@@ -53,7 +53,7 @@ class WarpCommand : Reloadable, DataHolder, Module {
             }
         }
         literalArgument("new") {
-            withPermission("mutils.position.manage")
+            withPermission("maptools.position-manage")
             stringArgument("name") {
                 playerExecutor { player, args ->
                     val name = args[0] as String

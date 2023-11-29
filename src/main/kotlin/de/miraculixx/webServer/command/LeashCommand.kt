@@ -26,7 +26,7 @@ class LeashCommand : Module {
     private val leashEvent = LeashEvent()
 
     private val command = command("leash") {
-        withPermission("buildertools.leash")
+        withPermission("maptools.leash")
 
         locationArgument("pos1", LocationType.BLOCK_POSITION) {
             locationArgument("pos2", LocationType.BLOCK_POSITION) {

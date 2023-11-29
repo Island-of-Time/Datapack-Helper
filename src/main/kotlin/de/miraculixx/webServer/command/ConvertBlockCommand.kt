@@ -29,7 +29,7 @@ import kotlin.jvm.optionals.getOrNull
 
 class ConvertBlockCommand: Module {
     private val command1 = command("blockify") {
-        withPermission("buildertools.blockify")
+        withPermission("maptools.blockify")
 
         locationArgument("pos", LocationType.BLOCK_POSITION) {
             stringArgument("tag") {
@@ -67,7 +67,7 @@ class ConvertBlockCommand: Module {
     }
 
     private val command2 = command("blockify-tool") {
-        withPermission("buildertools.blockify-tool")
+        withPermission("maptools.blockify-tool")
 
         floatArgument("scale") {
             stringArgument("tag") {
@@ -95,7 +95,7 @@ class ConvertBlockCommand: Module {
                             }
                         }
                         player.inventory.addItem(item)
-                        player.sendMessage(prefix + msg("command.blockConverter.add"))
+                        player.sendMessage(prefix + msg("command.blockConverter.tool"))
                     }
                 }
             }

@@ -20,7 +20,7 @@ import kotlin.jvm.optionals.getOrNull
 
 class TagToolCommand : Module {
     private val command = command("tag-tool") {
-        withPermission("buildertools.tag-tool")
+        withPermission("maptools.tag-tool")
         textArgument("tags") {
             entityTypeArgument("filter", true) {
                 doubleArgument("radius", 0.1, 10.0, true) {

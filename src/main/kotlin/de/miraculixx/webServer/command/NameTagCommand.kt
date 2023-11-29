@@ -21,7 +21,7 @@ import kotlin.jvm.optionals.getOrNull
 
 class NameTagCommand : Module {
     private val command = command("nametag") {
-        withPermission("buildertools.nametag")
+        withPermission("maptools.nametag")
 
         textArgument("content") {
             textArgument("name") {

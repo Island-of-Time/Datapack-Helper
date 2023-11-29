@@ -17,7 +17,7 @@ import org.bukkit.persistence.PersistentDataType
 
 class CommandToolCommand : Module {
     private val command = command("commandtool") {
-        withPermission("buildertools.commandtool")
+        withPermission("maptools.commandtool")
 
         commandArgument("command") {
             playerExecutor { player, args ->

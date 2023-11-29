@@ -17,14 +17,16 @@ class BlockUpdateCommand : Module {
     private var blockUpdates = true
 
     private val command = command("block-update") {
+        withPermission("maptools.block-update")
+
         literalArgument("toggle") {
             anyExecutor { sender, _ ->
                 if (blockUpdates) {
                     listener.register()
-                    sender.sendMessage(prefix + msg("command.blockUpdates.off"))
+                    sender.sendMessage(prefix + msg("command.blockUpdates.disable"))
                 } else {
                     listener.unregister()
-                    sender.sendMessage(prefix + msg("command.blockUpdates.on"))
+                    sender.sendMessage(prefix + msg("command.blockUpdates.enable"))
                 }
                 blockUpdates = !blockUpdates
             }

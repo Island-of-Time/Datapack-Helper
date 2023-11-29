@@ -14,6 +14,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 class ReloadDataPackCommand {
     private val command = commandTree("reload-dp") {
+        withPermission("maptools.reload-dp")
         withAliases("datapack-reload", "dp-reload")
         anyExecutor { commandSender, _ ->
             broadcast(msg("command.reload.reload", listOf(commandSender.name)))

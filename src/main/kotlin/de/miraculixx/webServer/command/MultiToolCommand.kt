@@ -32,7 +32,7 @@ val multiToolSelection: MutableMap<UUID, MutableMap<Entity, Any>> = mutableMapOf
 
 class MultiToolCommand : Module {
     private val command = command("multitool") {
-        withPermission("buildertools.multitool")
+        withPermission("maptools.multitool")
 
         literalArgument("get") {
             entityTypeArgument("type") {
@@ -125,7 +125,7 @@ class MultiToolCommand : Module {
         }
 
         literalArgument("execute-as") {
-            withPermission("buildertools.multitool-execute")
+            withPermission("maptools.multitool-execute")
 
             commandArgument("command") {
                 playerExecutor { player, args ->

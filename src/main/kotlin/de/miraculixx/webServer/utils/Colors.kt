@@ -11,6 +11,6 @@ val cSuccess: NamedTextColor = NamedTextColor.GREEN
 val cMark = TextColor.fromHexString("#6e94ff")!!
 val cHide = TextColor.fromHexString("#1f2124")!!
 
-val prefix = cmp("") + cmp("BuilderTools", cHighlight) + cmp(" >>", NamedTextColor.DARK_GRAY) + cmp(" ")
-const val tooling = false
+val prefix = cmp("") + cmp("MapTools", cHighlight) + cmp(" >>", NamedTextColor.DARK_GRAY) + cmp(" ")
+const val tooling = true
 lateinit var consoleSender: Audience

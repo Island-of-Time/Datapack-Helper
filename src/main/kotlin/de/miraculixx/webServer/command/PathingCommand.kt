@@ -52,7 +52,7 @@ class PathingCommand : Reloadable, Module {
     private var header = SettingsManager.saveReadFile(headerFile, "header/${headerFile.name}")
 
     private val command = command("pathing") {
-        withPermission("buildertools.pathing")
+        withPermission("maptools.pathing")
 
         literalArgument("new") {
             entitySelectorArgumentManyEntities("target") {
@@ -107,7 +107,7 @@ class PathingCommand : Reloadable, Module {
         }
 
         literalArgument("add-script") {
-            withPermission("buildertools.multitool-execute")
+            withPermission("maptools.pathing-execute")
 
             commandArgument("command") {
                 playerExecutor { player, args ->
@@ -123,6 +123,8 @@ class PathingCommand : Reloadable, Module {
         }
 
         literalArgument("add-repeat") {
+            withPermission("maptools.pathing-execute")
+
             integerArgument("amount", 1) {
                 commandArgument("command") {
                     playerExecutor { player, args ->

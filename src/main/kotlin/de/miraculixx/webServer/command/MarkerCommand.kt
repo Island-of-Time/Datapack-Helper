@@ -22,7 +22,7 @@ import org.bukkit.persistence.PersistentDataType
 
 class MarkerCommand : Module {
     private val command1 = command("marker-tool") {
-        withPermission("buildertools.marker-tool")
+        withPermission("maptools.marker-tool")
 
         stringArgument("tag") {
             playerExecutor { player, args ->
@@ -50,7 +50,7 @@ class MarkerCommand : Module {
     }
 
     private val command2 = command("marker-finder") {
-        withPermission("buildertools.marker-finder")
+        withPermission("maptools.marker-finder")
 
         integerArgument("range") {
             playerExecutor { player, args ->

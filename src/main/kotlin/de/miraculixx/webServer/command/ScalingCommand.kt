@@ -23,6 +23,8 @@ class ScalingCommand : Module {
     private val folder = File("world/datapacks/$pathingFolder/data/logic/functions")
 
     private val command = command("scaling") {
+        withPermission("maptools.scaling")
+
         locationArgument("from", LocationType.BLOCK_POSITION) {
             locationArgument("to", LocationType.BLOCK_POSITION) {
                 locationArgument("origin", LocationType.BLOCK_POSITION) {
