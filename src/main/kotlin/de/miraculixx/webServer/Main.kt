@@ -2,12 +2,14 @@ package de.miraculixx.webServer
 
 import de.miraculixx.kpaper.extensions.pluginManager
 import de.miraculixx.kpaper.main.KPaper
+import de.miraculixx.kpaper.main.KPaperConfiguration
 import de.miraculixx.mweb.api.MWebAPI
 import de.miraculixx.webServer.command.MapToolsCommand
 import de.miraculixx.webServer.command.ReloadDataPackCommand
 import de.miraculixx.webServer.events.*
 import de.miraculixx.webServer.utils.SettingsManager
 import de.miraculixx.webServer.utils.consoleSender
+import de.miraculixx.webServer.utils.prefix
 import dev.jorel.commandapi.CommandAPI
 import dev.jorel.commandapi.CommandAPIBukkitConfig
 
@@ -22,6 +24,7 @@ class Main : KPaper() {
         INSTANCE = this
         consoleSender = server.consoleSender
         CommandAPI.onLoad(CommandAPIBukkitConfig(this).silentLogs(true))
+        KPaperConfiguration.Text.prefix = prefix
     }
 
     override fun startup() {

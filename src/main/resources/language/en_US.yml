@@ -38,9 +38,6 @@ command:
     alreadyOn: "<red>Module <input-1> is already turned on!"
     turnedOn: "Module <input-1> is now <green>active"
     turnedOff: "Module <input-1> is now <red>inactive"
-  blockUpdates:
-    off: "Block updates are <red>disabled</red> now"
-    on: "Block updates are <green>enabled</green> now"
   animation:
     new: "New animation creator started! Add new points with /animation add"
     addPoint: "New position added! Render your animation with /animation render"
@@ -50,6 +47,9 @@ command:
     renderFinish: "<green>Finished animation rendering! You can save it with /animation print"
     finish: "New animation created! Click here to play it"
     notStarted: "<red>You don't have any animation creator! Create one via /animation new"
+  blockUpdates:
+    disable: "Block updates are <red>disabled</red> now"
+    enable: "Block updates are <green>enabled</green> now"
   commandTool:
     failApply: "<red>Put an item in your main hand to apply a command to it"
     failGet: "<red>Take a command tool in your main hand to get more information"
@@ -161,7 +161,7 @@ info:
     guide: "Start with entering <blue>/animation new</blue> to begin a new setup. Now you can add as many new control points as you want to manipulate the animation with <blue>/animation add</blue>. The added point is your current location and you need at least 3 to create proper interpolation. Remove unwanted positions with <blue>/animation remove-last</blue>. To complete or test your animation render it with <blue>/animation render <loop> <ticks> <target></blue> (loop:true will connect the last point with the first, ticks is the animation time between each point and target a given selector). After rendering you can either continue modifying your animation or print it to a usable datapack function via <blue>/animation print <target> <name></blue> (name represents the function name, use \"\" for nested paths e.g. \"camera/island/front\")"
   BLOCK_UPDATE:
     desc: "Toggle block updates on block placing/breaking"
-    guide: "Use <blue>/block-update</blue> toggle to turn any updating on block placing/breaking. Turning updates off prevent other blocks change their state like sand will not fall or stairs not transform. WARNING - This might break some things"
+    guide: "Use <blue>/block-update toggle</blue> to turn any updating on block placing/breaking. Turning updates off prevent other blocks change their state like sand will not fall or stairs not transform. WARNING - This might break some things"
   COMMAND_TOOL:
     desc: "Apply commands to your items"
     guide: "Take an item in your hand and enter <blue>/commandtool command <command></blue> to apply any command to it. Right clicking anywhere executes the command either on the interaction point or on your position. Use <blue>/commandtool clear</blue> to remove it again"
