@@ -12,7 +12,6 @@ object CustomNameTag {
     private val white = Color(255,255,255,255).rgb
 
     fun createNewNameTag(content: String, destination: File, mainColor: Int, shadowColor: Int, charShadowColor: Int, charColor: Int) {
-        println("Main: $mainColor Shadow: $shadowColor Char: $charShadowColor")
         var globalWidth = 2 + 3
         val globalHeight = 8
 

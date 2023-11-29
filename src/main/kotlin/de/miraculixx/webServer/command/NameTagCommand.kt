@@ -3,13 +3,17 @@ package de.miraculixx.webServer.command
 import com.google.common.primitives.UnsignedInteger
 import de.miraculixx.kpaper.extensions.bukkit.addCommand
 import de.miraculixx.kpaper.extensions.bukkit.addCopy
+import de.miraculixx.kpaper.extensions.console
 import de.miraculixx.kpaper.localization.msg
 import de.miraculixx.kpaper.localization.msgString
+import de.miraculixx.webServer.interfaces.DataHolder
 import de.miraculixx.webServer.interfaces.Module
 import de.miraculixx.webServer.utils.*
+import de.miraculixx.webServer.utils.SettingsManager.settingsFolder
 import de.miraculixx.webServer.utils.SettingsManager.texturePackFolder
 import de.miraculixx.webServer.utils.extensions.command
 import de.miraculixx.webServer.utils.extensions.unregister
+import dev.jorel.commandapi.arguments.ArgumentSuggestions
 import dev.jorel.commandapi.kotlindsl.anyExecutor
 import dev.jorel.commandapi.kotlindsl.textArgument
 import kotlinx.serialization.Serializable
@@ -19,16 +23,26 @@ import net.kyori.adventure.audience.Audience
 import java.io.File
 import kotlin.jvm.optionals.getOrNull
 
-class NameTagCommand : Module {
+class NameTagCommand : Module, DataHolder {
+    private val file = File(settingsFolder, "modules/nametag-inputs.json")
+    private val lastUsedMain: MutableSet<String> = mutableSetOf()
+    private val lastUsedShadow: MutableSet<String> = mutableSetOf()
+    private val lastUsedCharShadow: MutableSet<String> = mutableSetOf()
+    private val lastUsedChar: MutableSet<String> = mutableSetOf()
+
     private val command = command("nametag") {
         withPermission("maptools.nametag")
 
         textArgument("content") {
             textArgument("name") {
                 textArgument("main-color") {
+                    replaceSuggestions(ArgumentSuggestions.stringCollection { lastUsedMain })
                     textArgument("shadow-color") {
+                        replaceSuggestions(ArgumentSuggestions.stringCollection { lastUsedShadow })
                         textArgument("char-shadow-color") {
+                            replaceSuggestions(ArgumentSuggestions.stringCollection { lastUsedCharShadow })
                             textArgument("char-color", true) {
+                                replaceSuggestions(ArgumentSuggestions.stringCollection { lastUsedChar })
                                 anyExecutor { sender, args ->
                                     val content = args[0] as String
                                     val name = args[1] as String
@@ -36,6 +50,11 @@ class NameTagCommand : Module {
                                     val shadowColor = args[3] as String
                                     val charShadowColor = args[4] as String
                                     val charColor = args.getOptional(5).getOrNull() as? String ?: "ffffffff"
+
+                                    lastUsedMain.push(mainColor)
+                                    lastUsedShadow.push(shadowColor)
+                                    lastUsedCharShadow.push(shadowColor)
+                                    lastUsedChar.push(charColor)
 
                                     CustomNameTag.createNewNameTag(
                                         content,
@@ -52,7 +71,7 @@ class NameTagCommand : Module {
                                     font.providers.add(FontChar("bitmap", "minecraft:font/nametags/$name.png", 8, 8, listOf(unescaped)))
                                     fontFile.writeText(json.encodeToString(font))
 
-                                    sender.sendMessage(prefix + cmp("Successfully created a new nametag ") + cmp(name, cMark))
+                                    sender.sendMessage(prefix + msg("command.namtetag.create", listOf(name)))
                                     sender.sendMessage(prefix + cmp("-> $unescaped ($msgCopy)").addCopy(unescaped).addHover(cmp(msgString("common.copyLore"))))
                                     sender.sendMessage(prefix + msg("command.nametag.reloadRP").addCommand("/resourcepack"))
                                 }
@@ -62,6 +81,11 @@ class NameTagCommand : Module {
                 }
             }
         }
+    }
+
+    private fun MutableSet<String>.push(string: String) {
+        add(string)
+        if (size >= 6) remove(first())
     }
 
     private fun Int.to3Digits(): String {
@@ -99,6 +123,29 @@ class NameTagCommand : Module {
         return result.toString()
     }
 
+    override fun load() {
+        if (!file.exists()) return
+        try {
+            val inputs = json.decodeFromString<LastUsedInputs>(file.readText())
+            lastUsedMain.clear()
+            lastUsedMain.addAll(inputs.main)
+            lastUsedChar.clear()
+            lastUsedChar.addAll(inputs.char)
+            lastUsedShadow.clear()
+            lastUsedShadow.addAll(inputs.shadow)
+            lastUsedCharShadow.clear()
+            lastUsedCharShadow.addAll(inputs.charShadow)
+        } catch (e: Exception) {
+            console.sendMessage(prefix + cmp("Failed to read ${file.name}!", cError))
+            console.sendMessage(prefix + cmp("Reason: ${e.message ?: "Unknown"}"))
+        }
+    }
+
+    override fun save() {
+        if (!file.exists()) file.parentFile.mkdirs()
+        file.writeText(json.encodeToString(LastUsedInputs(lastUsedMain, lastUsedShadow, lastUsedChar, lastUsedCharShadow)))
+    }
+
     override fun disable() {
         command.unregister()
     }
@@ -112,4 +159,7 @@ class NameTagCommand : Module {
 
     @Serializable
     private data class FontChar(val type: String, val file: String, val ascent: Int, val height: Int, val chars: List<String>)
+
+    @Serializable
+    private data class LastUsedInputs(val main: Set<String>, val shadow: Set<String>, val char: Set<String>, val charShadow: Set<String>)
 }

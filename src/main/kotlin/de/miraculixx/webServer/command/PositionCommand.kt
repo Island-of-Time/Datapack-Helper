@@ -25,7 +25,7 @@ import java.io.File
 
 class WarpCommand : Reloadable, DataHolder, Module {
     private val positions: MutableMap<String, LiteLocation>
-    private val file = File(settingsFolder, "positions.json")
+    private val file = File(settingsFolder, "modules/positions.json")
 
     init {
         positions = if (file.exists()) {
