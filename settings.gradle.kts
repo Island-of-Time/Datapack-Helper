@@ -1,5 +1,5 @@
 
-rootProject.name = "PaperWebServer"
+rootProject.name = "MapTools"
 
 pluginManagement {
     repositories {
