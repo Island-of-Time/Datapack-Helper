@@ -372,7 +372,7 @@ object ToolEvent {
             e.scoreboardTags.removeAll(tags)
             sendMessage(
                 prefix + (cmp("Removed tags from ") + e.name().color(cHighlight) + cmp(" (Hover for info)"))
-                    .addHover(cmp("Removed Tags:\n - ${tags.stringify()}\n\nRemaining Tags:\n - ${e.scoreboardTags.stringify()}"))
+                    .addHover(cmp("Removed Tags:\n", cMark) + cmp(tags.stringify()) + cmp("\n\nRemaining Tags:\n", cMark) + cmp(e.scoreboardTags.stringify()))
             )
         }
     }
