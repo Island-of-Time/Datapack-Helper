@@ -19,7 +19,7 @@ import dev.jorel.commandapi.kotlindsl.textArgument
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
-import net.kyori.adventure.audience.Audience
+import org.bukkit.command.CommandSender
 import java.io.File
 import kotlin.jvm.optionals.getOrNull
 
@@ -96,7 +96,7 @@ class NameTagCommand : Module, DataHolder {
         }
     }
 
-    private fun String.toColor(sender: Audience): Int? {
+    private fun String.toColor(sender: CommandSender): Int? {
         return try {
             val hex = if (this[0] == '#') substring(1, length) else this
             when (hex.length) {
