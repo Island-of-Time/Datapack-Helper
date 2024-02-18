@@ -1,45 +1,50 @@
-import java.net.URI
+import dex.plugins.outlet.v2.util.ReleaseType
+import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
+import org.jetbrains.kotlin.gradle.plugin.extraProperties
 
 plugins {
-    kotlin("jvm") version "1.9.20"
-    kotlin("plugin.serialization") version "1.9.20"
-    id("io.papermc.paperweight.userdev") version "1.5.10"
+    kotlin("jvm") version "1.9.22"
+    kotlin("plugin.serialization") version "1.9.22"
+    id("io.papermc.paperweight.userdev") version "1.5.+"
     id("xyz.jpenilla.run-paper") version "2.2.2"
-    id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("net.minecrell.plugin-yml.bukkit") version "0.6.0"
+    id("com.modrinth.minotaur") version "2.+"
+    id("io.github.dexman545.outlet") version "1.6.1"
 }
 
+group = properties["group"] as String
+version = properties["version"] as String
+description = properties["description"] as String
 
-group = "de.miraculixx"
-version = "1.0.0"
+val gameVersion by properties
+val foliaSupport = properties["foliaSupport"] as String == "true"
+val projectName = properties["name"] as String
 
 repositories {
     mavenCentral()
-    maven {
-        url = URI("https://repo.codemc.io/repository/maven-snapshots")
-        name = "codemc-snapshots"
-    }
-    maven { url = URI("https://s01.oss.sonatype.org/content/repositories/snapshots") }
 }
 
 dependencies {
-    paperweight.paperDevBundle("1.20.2-R0.1-SNAPSHOT")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-serialization-json:1.4.1")
-    compileOnly("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.0-Beta")
-    compileOnly("org.zeroturnaround:zt-zip:1.15")
+    paperweight.paperDevBundle("${gameVersion}-R0.1-SNAPSHOT")
 
-    compileOnly("dev.jorel:commandapi-bukkit-shade:9.2.0")
-    compileOnly("dev.jorel:commandapi-bukkit-kotlin:9.2.0")
+    // Kotlin libraries
+    library(kotlin("stdlib"))
+    library("org.jetbrains.kotlinx:kotlinx-serialization-json:1.+")
+    library("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.+")
 
-    compileOnly("commons-codec:commons-codec:1.15")
-    compileOnly("de.miraculixx:kpaper:1.1.1")
+    // Minecraft libraries
+    library("de.miraculixx:kpaper:1.+")
+    library("dev.jorel:commandapi-bukkit-shade:9.3.+")
+    library("dev.jorel:commandapi-bukkit-kotlin:9.3.+")
+
+    library("commons-codec:commons-codec:1.15")
+    library("org.zeroturnaround:zt-zip:1.15")
+
     compileOnly("de.miraculixx:mweb:1.1.0")
-
-    implementation("de.miraculixx:kpaper:1.1.1")
 }
 
 tasks {
     assemble {
-        dependsOn(shadowJar)
         dependsOn(reobfJar)
     }
     compileJava {
@@ -49,4 +54,39 @@ tasks {
     compileKotlin {
         kotlinOptions.jvmTarget = "17"
     }
+}
+
+bukkit {
+    main = "$group.${projectName.lowercase()}.${projectName}"
+    apiVersion = "1.16"
+    foliaSupported = foliaSupport
+
+    // Optionals
+    load = BukkitPluginDescription.PluginLoadOrder.POSTWORLD
+    depend = listOf("MUtils-Web")
+    softDepend = listOf()
+}
+
+modrinth {
+    token.set(properties["modrinthToken"] as String)
+    projectId.set(properties["modrinthProjectId"] as? String ?: projectName)
+    versionNumber.set(version as String)
+    versionType.set("release") // Can also be `beta` or `alpha`
+    uploadFile.set(tasks.jar)
+    outlet.mcVersionRange = properties["supportedVersions"] as String
+    outlet.allowedReleaseTypes = setOf(ReleaseType.RELEASE)
+    gameVersions.addAll(outlet.mcVersions())
+    loaders.addAll(buildList {
+        add("paper")
+        add("purpur")
+        if (foliaSupport) add("folia")
+    })
+    dependencies {
+        // The scope can be `required`, `optional`, `incompatible`, or `embedded`
+        // The type can either be `project` or `version`
+        required.project("mweb")
+    }
+
+    // Project sync
+    syncBodyFrom = rootProject.file("README.md").readText()
 }
