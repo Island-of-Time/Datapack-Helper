@@ -71,6 +71,7 @@ modrinth {
     token.set(properties["modrinthToken"] as String)
     projectId.set(properties["modrinthProjectId"] as? String ?: projectName)
     versionNumber.set(version as String)
+    versionName.set("$projectName - $version")
     versionType.set("release") // Can also be `beta` or `alpha`
     uploadFile.set(tasks.jar)
     outlet.mcVersionRange = properties["supportedVersions"] as String
