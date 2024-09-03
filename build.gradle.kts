@@ -1,15 +1,15 @@
 import dex.plugins.outlet.v2.util.ReleaseType
 import net.minecrell.pluginyml.bukkit.BukkitPluginDescription
-import org.jetbrains.kotlin.gradle.plugin.extraProperties
 
 plugins {
-    kotlin("jvm") version "1.9.22"
-    kotlin("plugin.serialization") version "1.9.22"
-    id("io.papermc.paperweight.userdev") version "1.5.+"
-    id("xyz.jpenilla.run-paper") version "2.2.2"
+    kotlin("jvm") version "2.0.20"
+    kotlin("plugin.serialization") version "2.0.20"
+    id("io.papermc.paperweight.userdev") version "1.7.+"
+    id("xyz.jpenilla.run-paper") version "2.3.0"
     id("net.minecrell.plugin-yml.bukkit") version "0.6.0"
     id("com.modrinth.minotaur") version "2.+"
     id("io.github.dexman545.outlet") version "1.6.1"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 group = properties["group"] as String
@@ -24,6 +24,8 @@ repositories {
     mavenCentral()
 }
 
+paperweight.reobfArtifactConfiguration = io.papermc.paperweight.userdev.ReobfArtifactConfiguration.MOJANG_PRODUCTION
+
 dependencies {
     paperweight.paperDevBundle("${gameVersion}-R0.1-SNAPSHOT")
 
@@ -34,8 +36,8 @@ dependencies {
 
     // Minecraft libraries
     library("de.miraculixx:kpaper:1.+")
-    library("dev.jorel:commandapi-bukkit-shade:9.3.+")
-    library("dev.jorel:commandapi-bukkit-kotlin:9.3.+")
+    implementation("dev.jorel:commandapi-bukkit-shade-mojang-mapped:9.5.3")
+    implementation("dev.jorel:commandapi-bukkit-kotlin:9.5.3")
 
     library("commons-codec:commons-codec:1.15")
     library("org.zeroturnaround:zt-zip:1.15")
@@ -45,14 +47,22 @@ dependencies {
 
 tasks {
     assemble {
-        dependsOn(reobfJar)
+        dependsOn(shadowJar)
     }
     compileJava {
         options.encoding = "UTF-8"
-        options.release.set(17)
+        options.release.set(21)
     }
     compileKotlin {
-        kotlinOptions.jvmTarget = "17"
+        kotlinOptions.jvmTarget = "21"
+    }
+    shadowJar {
+        dependencies {
+            include {
+                it.moduleGroup == "de.miraculixx" || it.moduleGroup == "dev.jorel"
+            }
+        }
+        relocate("dev.jorel.commandapi", "de.miraculixx.mchallenge.commandapi")
     }
 }
 

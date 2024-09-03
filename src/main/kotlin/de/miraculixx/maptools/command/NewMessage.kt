@@ -68,13 +68,13 @@ class NewMessage : Reloadable, Module {
 
         literalArgument("validate") {
             anyExecutor { sender, _ ->
-                val globals = getFileNamesInFolder(File(functionFolder, "chat/functions"))
+                val globals = getFileNamesInFolder(File(functionFolder, "chat/function"))
                 val languages = messageLanguages
                 languages.forEach { lang ->
-                    val messages = getFileNamesInFolder(File(functionFolder, "$lang/functions"))
+                    val messages = getFileNamesInFolder(File(functionFolder, "$lang/function"))
                     messages.toMutableSet().apply { removeAll(globals) }.forEach { name ->
                         sender.sendMessage(prefix + msg("command.message.missingGlobal", listOf(lang, name)))
-                        File(functionFolder, "chat/functions/$name.mcfunction").apply { parentFile.mkdirs() }.writeGlobal(name)
+                        File(functionFolder, "chat/function/$name.mcfunction").apply { parentFile.mkdirs() }.writeGlobal(name)
                     }
 
                     globals.toMutableSet().apply { removeAll(messages) }.forEach { name ->
@@ -92,7 +92,7 @@ class NewMessage : Reloadable, Module {
                     anyExecutor { sender, args ->
                         val name = args[0] as String
                         val lang = args[1] as String
-                        val file = File(functionFolder, "$lang/functions/${name.removeSuffix(".json")}.json")
+                        val file = File(functionFolder, "$lang/function/${name.removeSuffix(".json")}.json")
                         if (!file.exists()) {
                             sender.sendMessage(prefix + cmp(msgString("common.fileNotFound"), cError))
                             return@anyExecutor
@@ -138,14 +138,14 @@ class NewMessage : Reloadable, Module {
         return buildSet {
             folder?.takeIf { it.isDirectory }?.listFiles()?.forEach { file ->
                 if (file.isDirectory) addAll(getFileNamesInFolder(file))
-                else add(file.path.substringAfter("functions/").removeSuffix(".mcfunction"))
+                else add(file.path.substringAfter("function/").removeSuffix(".mcfunction"))
             }
         }
     }
 
     private fun calculateMessage(message: String, data: FunctionInfo) {
-        val targetFile = File(functionFolder, "${data.lang}/functions/${data.functionName}.mcfunction")
-        val globalFile = File(functionFolder, "chat/functions/${data.functionName}.mcfunction")
+        val targetFile = File(functionFolder, "${data.lang}/function/${data.functionName}.mcfunction")
+        val globalFile = File(functionFolder, "chat/function/${data.functionName}.mcfunction")
         if (!targetFile.exists()) targetFile.parentFile.mkdirs()
         if (!globalFile.exists()) globalFile.parentFile.mkdirs()
         val namespace = data.scoreName

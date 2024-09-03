@@ -11,7 +11,6 @@ enum class Modules(val isSupporter: Boolean = false, val isExperimental: Boolean
     MULTI_TOOL,
     NAME_TAG(true),
     MESSAGES,
-    ORIGIN_TOOL(true,true),
     PATHING,
     QUEST_BOOK(isExperimental = true),
     TAG_TOOL,
@@ -19,6 +18,7 @@ enum class Modules(val isSupporter: Boolean = false, val isExperimental: Boolean
     POSITIONS,
     DANGER_WARNING,
     TEXT_STYLING,
+    SYNC,
 
     CORE
 }

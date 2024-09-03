@@ -4,4 +4,4 @@
 #-------------------------------------------------------#
 
 # Language Redirection
-# - Target: ../../<lang>/functions/<name>
+# - Target: ../../<lang>/function/<name>

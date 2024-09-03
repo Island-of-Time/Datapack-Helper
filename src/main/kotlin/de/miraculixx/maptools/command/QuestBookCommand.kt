@@ -24,7 +24,7 @@ import java.io.File
 @Experimental
 class QuestBookCommand : Module {
     // This module will get its own namespace if it ever should exit experimental
-    private val datapackFile = File("world/datapacks/${SettingsManager.pathingFolder}/data/logic/functions/quest-book")
+    private val datapackFile = File("world/datapacks/${SettingsManager.pathingFolder}/data/logic/function/quest-book")
     private val gson = GsonComponentSerializer.gson()
     private val darkGray = TextColor.fromHexString("#4F4F4F")!!
 

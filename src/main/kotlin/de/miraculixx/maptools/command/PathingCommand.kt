@@ -374,7 +374,7 @@ class PathingCommand : Reloadable, Module {
     override fun reload() {
         dataPackFolder = File("${worlds.first().name}/datapacks/${pathingFolder}")
         packMetaFile = File(dataPackFolder, "pack.mcmeta")
-        functionFolder = File(dataPackFolder, "data/pathing/functions")
+        functionFolder = File(dataPackFolder, "data/pathing/function")
         header = SettingsManager.saveReadFile(headerFile, "header/${headerFile.name}")
     }
 

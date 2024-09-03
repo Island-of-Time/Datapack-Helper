@@ -69,14 +69,14 @@ object SettingsManager {
         Modules.MULTI_TOOL to MultiToolCommand(),
         Modules.NAME_TAG to NameTagCommand(),
         Modules.MESSAGES to NewMessage(),
-        Modules.ORIGIN_TOOL to ScalingCommand(),
         Modules.PATHING to PathingCommand(),
         Modules.QUEST_BOOK to QuestBookCommand(),
         Modules.TAG_TOOL to TagToolCommand(),
         Modules.RESOURCE_PACK to TexturePackCommand(),
         Modules.POSITIONS to WarpCommand(),
         Modules.DANGER_WARNING to DangerWarningEvent(),
-        Modules.TEXT_STYLING to TextInputEvent()
+        Modules.TEXT_STYLING to TextInputEvent(),
+        Modules.SYNC to SyncCommand,
     )
     private val reloadable = modules.values.filterIsInstance<Reloadable>()
     private val dataHolder = modules.values.filterIsInstance<DataHolder>()
@@ -96,7 +96,7 @@ object SettingsManager {
             }
         }
         pluginSettings.mainModules.forEach { (t, u) -> if (moduleState[t] != u) changeModuleState(t, u) }
-        pluginSettings.supporterModules.forEach { (t, u) -> if (moduleState[t] != u && tooling) changeModuleState(t, u) }
+        pluginSettings.supporterModules.forEach { (t, u) -> if (moduleState[t] != (u && tooling)) changeModuleState(t, u) }
         pluginSettings.experimentalModules.forEach { (t, u) -> if (moduleState[t] != u) changeModuleState(t, u) }
         Modules.entries.forEach { m ->
             if (moduleState[m] == null) moduleState[m] = !m.isExperimental && (tooling || !m.isSupporter)

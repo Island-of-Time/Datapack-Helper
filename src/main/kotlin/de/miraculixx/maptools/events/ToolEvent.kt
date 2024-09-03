@@ -97,15 +97,15 @@ object ToolEvent {
                 if (!SettingsManager.getModuleState(Modules.MARKER)) return@listen
                 if (!player.hasPermission("buildertools.marker-tool")) return@listen
                 val block = it.clickedBlock ?: return@listen
-                val tag = container.get(key, PersistentDataType.STRING)
+                val tags = container.get(key, PersistentDataType.STRING)?.split(',') ?: emptyList()
                 it.isCancelled = true
                 if (it.action == Action.RIGHT_CLICK_BLOCK) {
                     val marker = block.world.spawn(block.location.subtract(-.5, -.5, -.5), Marker::class.java)
-                    marker.scoreboardTags.add(tag)
+                    marker.scoreboardTags.addAll(tags)
                     player.soundEnable()
                 } else {
                     block.location.getNearbyEntitiesByType(Marker::class.java, 1.0).forEach { e ->
-                        if (e.scoreboardTags.contains(tag)) {
+                        if (e.scoreboardTags.any { t -> t in tags }) {
                             e.remove()
                             player.sendMessage(prefix + cmp("Removed a marker at targeted position"))
                         }
@@ -329,8 +329,8 @@ object ToolEvent {
                     val nearbyFull = p.location.getNearbyEntitiesByType(Marker::class.java, radius?.toDouble() ?: 3.0).toMutableSet()
                     val nearbyHalf = p.location.getNearbyEntitiesByType(Marker::class.java, radius?.toDouble()?.div(2) ?: 1.5).toSet()
                     nearbyFull.removeAll(nearbyHalf)
-                    nearbyFull.forEach { e -> p.spawnParticle(Particle.VILLAGER_HAPPY, e.location, 2, 0.4, 0.4, 0.4, 0.1) }
-                    nearbyHalf.forEach { e -> p.spawnParticle(Particle.VILLAGER_HAPPY, e.location, 2, 0.2, 0.2, 0.2, 0.1) }
+                    nearbyFull.forEach { e -> p.spawnParticle(Particle.HAPPY_VILLAGER, e.location, 2, 0.4, 0.4, 0.4, 0.1) }
+                    nearbyHalf.forEach { e -> p.spawnParticle(Particle.HAPPY_VILLAGER, e.location, 2, 0.2, 0.2, 0.2, 0.1) }
                 }
 
                 Material.PINK_STAINED_GLASS_PANE -> {
@@ -357,7 +357,7 @@ object ToolEvent {
                     val multiData = multiToolSelection[p.uniqueId] ?: return@forEach
                     multiData.forEach { (e, _) ->
                         if (e !is LivingEntity && e !is BlockDisplay) {
-                            p.spawnParticle(Particle.VILLAGER_HAPPY, e.location, 2, 0.1, 0.1, 0.1, 0.1)
+                            p.spawnParticle(Particle.HAPPY_VILLAGER, e.location, 2, 0.1, 0.1, 0.1, 0.1)
                         }
                     }
                 }

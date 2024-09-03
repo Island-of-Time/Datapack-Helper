@@ -6,6 +6,7 @@ import de.miraculixx.kpaper.main.KPaperConfiguration
 import de.miraculixx.mweb.api.MWebAPI
 import de.miraculixx.maptools.command.MapToolsCommand
 import de.miraculixx.maptools.command.ReloadDataPackCommand
+import de.miraculixx.maptools.command.SyncCommand
 import de.miraculixx.maptools.events.ToolEvent
 import de.miraculixx.maptools.utils.SettingsManager
 import de.miraculixx.maptools.utils.consoleSender
@@ -41,6 +42,7 @@ class MapTools : KPaper() {
 
         // All Modules
         SettingsManager
+        SyncCommand.load()
     }
 
     override fun shutdown() {

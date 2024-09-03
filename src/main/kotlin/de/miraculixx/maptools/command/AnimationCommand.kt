@@ -173,7 +173,7 @@ class AnimationCommand : Reloadable, Module {
         header = saveReadFile(headerFile, "header/animation.txt")
         dataPackFolder = File("${worlds.first().name}/datapacks/${animationFolder}")
         packMetaFile = File(dataPackFolder, "pack.mcmeta")
-        functionFolder = File(dataPackFolder, "data/animation/functions")
+        functionFolder = File(dataPackFolder, "data/animation/function")
     }
 
     override fun disable() {

@@ -13,6 +13,7 @@ import org.bukkit.Location
 
 val json = Json {
     prettyPrint = true
+    ignoreUnknownKeys = true
 }
 
 object LocationSerializer : KSerializer<Location> {
